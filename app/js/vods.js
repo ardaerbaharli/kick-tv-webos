@@ -560,6 +560,7 @@ function vodThumb(v, minWidth) {
 }
 function openVods(slug) {
   if (!state.ready || !slug) return;
+  if (window.TVApp) TVApp.catalogueOpened('vods');
   if (browse.open) closeBrowse();
   if (settings.open) closeSettings();
   if (vods.open) rememberVodCatalogue();
@@ -729,6 +730,7 @@ function vodActivate() {
   }
 }
 function playVod(v, queue, queueIndex, slug, opts) {
+  if (window.TVApp) TVApp.onPlaybackStart();
   var liveRewind = !!(opts && opts.liveRewind);
   teardownVideo();
   disconnectChat();
@@ -744,7 +746,7 @@ function playVod(v, queue, queueIndex, slug, opts) {
     playIndex = 0;
   }
   var progressKey = vodProgressKey(vodSlug, v);
-  var resumeAt = liveRewind ? opts.resumeAt : savedVodPosition(progressKey);
+  var resumeAt = liveRewind ? opts.resumeAt : (opts && opts.startOver ? 0 : savedVodPosition(progressKey));
   var savedEntry = liveRewind ? null : loadVodProgress().items[progressKey];
   if (savedEntry && savedEntry.dismissed) { delete savedEntry.dismissed; writeVodProgress(loadVodProgress()); }
   var knownDuration = (savedEntry && savedEntry.duration) || (v.duration || 0) / 1000 || 0;

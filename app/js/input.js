@@ -313,6 +313,7 @@ function browseCardFromEvent(e) {
       if (state.sidebarOpen) {
         closeSidebarWithGrace();                                  // do not reopen on the next stray move
       } else {
+        if (window.TVPlayer) { TVPlayer.show(); return; }
         state.suppressNudgeUntil = 0;                               // an explicit click always brings it back
         openSidebar();
       }
@@ -322,6 +323,7 @@ function browseCardFromEvent(e) {
   // reaching the left edge opens the sidebar as well.
   var lastX = -1, lastY = -1;
   playerEl.addEventListener('mousemove', function (e) {
+    if (window.TVApp) return;
     if (ChatWindow.activePointer(e.target)) return;
     if (diagDrag) return;                 // dragging the diagnostics window, not browsing
     if (liveBar.dragTarget !== null) return;   // dragging the live timeline

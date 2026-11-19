@@ -4,7 +4,7 @@ var ChatWindow = (function () {
   var KEY = 'kicktv.chatwindow', MIN_W = 320, MIN_H = 240;
   var rect = null, floating = null, dock = null, gesture = null, frame = null, tailFrame = null;
   var following = true, unread = 0, suppressUntil = 0, initialized = false, hovered = false;
-  var autoLiveTimer = null;
+  var autoLiveTimer = null, remoteReading = false;
   var activeChannel = '', fallback = null, layouts = Object.create(null), layoutOrder = [];
   function el(id) { return document.getElementById(id); }
   function copy(r) { return { x: r.x, y: r.y, w: r.w, h: r.h }; }
@@ -14,7 +14,7 @@ var ChatWindow = (function () {
   // Keep geometry in its original coordinates so opening a menu never saves
   // a smaller window, and dragging still works at the reduced scale.
   function viewport() {
-    if (!state.sidebarOpen) return { x: 0, y: 0, scale: 1 };
+    if (!state.sidebarOpen || window.TVApp) return { x: 0, y: 0, scale: 1 };
     var height = state.vod ? 690 : 660, scale = height / 1080;
     return { x: 490 + (1410 - 1920 * scale) / 2, y: state.vod ? 40 : 170, scale: scale };
   }
@@ -85,7 +85,7 @@ var ChatWindow = (function () {
     if (autoLiveTimer !== null) { clearTimeout(autoLiveTimer); autoLiveTimer = null; }
   }
   function updateAutoLive() {
-    if (following || hovered || gesture || !el('chat').classList.contains('on')) {
+    if (remoteReading || following || hovered || gesture || !el('chat').classList.contains('on')) {
       cancelAutoLive(); return;
     }
     // Keep the original deadline when messages arrive or the window repaints.
@@ -361,6 +361,11 @@ var ChatWindow = (function () {
       } else { unread += count || 1; updateJump(); }
     },
     side: function () { return rect && rect.x + rect.w / 2 < 960 ? 'left' : 'right'; },
+    jump: jumpToLive,
+    scroll: function (delta) { following = false; el('chat-scroll').scrollTop += delta; updateJump(); cancelAutoLive(); },
+    remoteReading: function (on) { remoteReading = on; cancelAutoLive(); },
+    preset: function (side) { finish(true); selectChannel(); rect.w = 460; if (side === 'overlay') { dock = null; rect = { x: 1396, y: 100, w: 460, h: 760 }; } else dockRect(side); paint(); save(); },
+    width: function (width) { finish(true); rect.w = width; paint(); save(); },
     reset: function () { finish(true); restore(defaultRect()); paint(); save(); followTail(); }
   };
 })();

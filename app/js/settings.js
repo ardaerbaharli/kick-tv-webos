@@ -10,7 +10,7 @@ var settings = { open: false, focus: 0, items: [],
                  chatEvents: true, chatPinned: true, raidFollow: true,
                  sleepMin: 0,           // minutes left on the sleep timer; never saved (sleep.js)
                  alerts: 'all', notifySec: 10, saverMin: 1,
-                 uiText: 'normal', chatResizePreview: true };
+                 uiText: 'normal', chatResizePreview: true, startup: 'home', reducedMotion: false };
 // Chat choices belong to the watched streamer. The previous shared choices
 // become a fixed starting point for streamers without a saved profile.
 var CHAT_PREF_KEY = 'kicktv.chatprefs';
@@ -29,7 +29,7 @@ function chatOptionsFrom(source, fallback) {
   var delay = parseInt(s.chatDelay, 10);
   return {
     chat: s.chat === true, chatSeparate: s.chatSeparate === true, chatResizePreview: s.chatResizePreview !== false,
-    chatSize: pickEnum(s.chatSize, ['small', 'medium', 'large'], 'medium'),
+    chatSize: pickEnum(s.chatSize, ['small', 'medium', 'large', 'xlarge'], 'medium'),
     chatOpacity: pickEnum(s.chatOpacity, ['low', 'medium', 'high'], 'high'),
     chatBackground: s.chatBackground === 'white' ? 'white' : 'black',
     chatTransparency: transparency >= 0 && transparency <= 100 ? transparency :
@@ -113,7 +113,7 @@ function touchSettings() {
   if (!settings.open && !(qualityopt && qualityopt.open) && !(chatopt && chatopt.open)) return;
   clearTimeout(settingsIdleTimer);
   if (backup && backup.open) return;
-  settingsIdleTimer = setTimeout(closeSettingsStack, SETTINGS_IDLE_MS);
+  // Explicit settings panels stay open until the viewer dismisses them.
 }
 function closeSettingsStack() {
   if (backup && backup.open) closeBackup();
@@ -134,6 +134,8 @@ function pickEnum(v, allowed, def) { for (var i = 0; i < allowed.length; i++) if
 function loadSettings() {
   var s = {};
   try { s = JSON.parse(localStorage.getItem('kicktv.settings')) || {}; } catch (e) {}
+  settings.startup = pickEnum(s.startup, ['home', 'resume'], localStorage.getItem(FIRSTRUN_KEY) ? 'resume' : 'home');
+  settings.reducedMotion = s.reducedMotion === true;
   settings.lowlatency = !!s.lowlatency;
   settings.autoadvance = !!s.autoadvance;
   settings.autoSkipWatched = s.autoSkipWatched !== false;
@@ -166,7 +168,7 @@ function saveSettings() {
       dim: settings.rememberDim ? settings.dim : false, rememberDim: settings.rememberDim,
       dimStrength: settings.dimStrength, dimScope: settings.dimScope,
       alerts: settings.alerts, notifySec: settings.notifySec, saverMin: settings.saverMin,
-      uiText: settings.uiText, qualityAlert: settings.qualityAlert
+      uiText: settings.uiText, qualityAlert: settings.qualityAlert, startup: settings.startup, reducedMotion: settings.reducedMotion
     });
     if (serialized !== settingsSerialized) {
       localStorage.setItem('kicktv.settings', serialized);
@@ -198,6 +200,8 @@ function applyDim() {
 // Stream quality is intentionally not a setting; it has its own player control.
 function settingsBuild() {
   var items = [
+    { kind: 'choice', key: 'startup', label: 'Open app to', values: [{ v: 'home', label: 'Home' }, { v: 'resume', label: 'Resume last watched' }] },
+    { kind: 'toggle', key: 'reducedMotion', label: 'Reduce motion' },
     { kind: 'chatopt', label: 'Live chat' },
     { kind: 'toggle', key: 'lowlatency', label: 'Low latency' },
     { kind: 'toggle', key: 'autoadvance', label: 'Auto-advance' },
@@ -208,8 +212,8 @@ function settingsBuild() {
     { kind: 'blockedcats', label: 'Blocked categories' },
     { kind: 'backup', label: 'Backup & restore' },
     { kind: 'toggle', key: 'diagnostics', label: 'Diagnostics' },
-    { kind: 'choice', key: 'uiText', label: 'Big UI', values: [{ v: 'normal', label: 'Normal' }, { v: 'large', label: 'Large' }] },
-    { kind: 'dimopt', label: 'Dim (night)' },
+    { kind: 'choice', key: 'uiText', label: 'Text size', values: [{ v: 'normal', label: 'Normal' }, { v: 'large', label: 'Large' }] },
+    { kind: 'dimopt', label: 'Night mode' },
     { kind: 'range', key: 'sleepMin', label: 'Sleep timer',
       range: { id: 'sleep-timer', min: 0, max: 180, step: 15, unit: 'min' } },
     { kind: 'choice', key: 'alerts', label: 'Live alerts',
@@ -456,7 +460,7 @@ function selectChoice(it, index) {
   if (it.key === 'uiText' && window.UIPolish) {
     UIPolish.apply(); sideLayout = null; sideTextStyle = null; renderSidebar();
   }
-  toast(it.label + ': ' + (n === 2 ? (nv.v === it.values[1].v ? 'On' : 'Off') : nv.label));
+  if (window.TVApp) TVApp.geometry();
 }
 /* A short description of the focused setting, shown in the detached context
    card used by the original Settings layout. */
@@ -793,6 +797,7 @@ function openQualityOpt() {
   touchSettings();
 }
 function closeQualityOpt() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'quality') { TVNavigation.pop(); return; }
   qualityopt.open = false;
   clearTimeout(settingDescTimer);
   document.getElementById('settings-desc').className = 'hidden';
@@ -886,6 +891,7 @@ function openDimOpt() {
   touchSettings();
 }
 function closeDimOpt() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'dim') { TVNavigation.pop(); return; }
   dimopt.open = false;
   document.getElementById('dimoptmodal').className = 'hidden';
   if (settings.open) renderSettings();     // refresh the On/Off shown on the Dim row
@@ -1018,6 +1024,7 @@ function openChatOpt() {
   touchSettings();
 }
 function closeChatOpt() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'advancedChat') { TVNavigation.pop(); return; }
   saveSettings();
   chatopt.open = false;
   document.getElementById('chatoptmodal').className = 'hidden';
@@ -1123,6 +1130,7 @@ function openBlockedCats() {
   touchSettings();
 }
 function closeBlockedCats() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'blocked') { TVNavigation.pop(); return; }
   blockedcats.open = false;
   document.getElementById('blockedcatsmodal').className = 'hidden';
   if (settings.open) renderSettings();     // refresh the count on the row behind it
@@ -1266,6 +1274,7 @@ function openUpdateNotes() {
   touchSettings();
 }
 function closeUpdateNotes() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'updates') { TVNavigation.pop(); return; }
   updateopen = false;
   document.getElementById('updatemodal').className = 'hidden';
   if (settings.open) applySettingsFocus();

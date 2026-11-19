@@ -11,7 +11,7 @@
     var ev = root.event;
     if (ev && /^(mouse|pointer)/.test(ev.type)) return scroll;
     var hidden = Math.max(0, scroll - top) + Math.max(0, top + height - (scroll + viewHeight));
-    if (hidden <= Math.max(2, height / 3)) return scroll;
+    if (hidden <= 2) return scroll;
     if (top < scroll) return Math.max(0, top - (pad || 0));
     return top + height - viewHeight + (pad || 0);
   }

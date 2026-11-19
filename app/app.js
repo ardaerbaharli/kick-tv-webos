@@ -169,7 +169,9 @@ function finishStartupWithoutVod(preserveLastVod) {
 }
 function finishStartupFallback(preserveLastVod) {
   var target = startupLiveTarget();
-  if (target) { play(target, preserveLastVod); return; }
+  var wanted = loadLast();
+  if (target && target === wanted) { play(target, preserveLastVod); return; }
+  if (window.TVApp) { TVApp.show('home', null, true); return; }
   // Nothing to play. On a fresh, empty setup, open the live browser so there
   // is something to pick from right away; otherwise show the idle screen.
   if (!getFavorites().length && !state.netDown) {
@@ -251,6 +253,11 @@ function bootChoiceSuperseded() {
   loadSettings();
   ChatWindow.init();
   if (window.UIPolish) UIPolish.init();
+  if (settings.startup === 'home') {
+    getFirstRun(); loadChannelCache(); markBootReady(); TVApp.show('home', null, true);
+    fetchFavorites(function () { TVApp.refresh(); });
+    return;
+  }
   getFirstRun();      // stamp the baseline before any offline row can render
   loadChannelCache();                         // instant sidebar/home data while the real fetch runs
   applyDim();

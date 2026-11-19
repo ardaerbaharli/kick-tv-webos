@@ -1,0 +1,40 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · anchor hue: Kick green
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
+ * sRGB fallbacks are intentional: supported webOS engines predate OKLCH. */
+:root {
+  --color-background: #101214;
+  --color-surface: #1a1e22;
+  --color-raised: #292f35;
+  --color-control: #343d45;
+  --color-text: #f5f6f7;
+  --color-muted: #bac2c9;
+  --color-faint: #89959e;
+  --color-rule: #414b54;
+  --color-brand: #53fc18;
+  --color-brand-ink: #102009;
+  --color-focus: #ffffff;
+  --color-live: #ff6868;
+  --color-scrim: rgba(0, 0, 0, 0.65);
+  --color-clear: rgba(0, 0, 0, 0);
+  --color-video-scrim: rgba(0, 0, 0, 0.94);
+  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display: var(--font-body);
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  --text-small: 24px;
+  --text-body: 28px;
+  --text-large: 34px;
+  --text-display: 48px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-short: 140ms;
+}
+@supports (color: oklch(50% 0 0)) {
+  :root { --color-brand: oklch(88% 0.27 137); --color-background: oklch(18% 0.005 250); }
+}

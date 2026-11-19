@@ -66,6 +66,7 @@ function openBackup() {
   touchSettings();
 }
 function closeBackup() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'backup') { TVNavigation.pop(); return; }
   cancelBackupImport();
   backup.open = false;
   clearInterval(backup.timer); backup.timer = null;

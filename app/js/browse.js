@@ -177,6 +177,7 @@ function thumbUrl(s) {
 }
 function openBrowse(categorySlug, categoryName) {
   if (!state.ready) return;
+  if (window.TVApp) TVApp.catalogueOpened('browse');
   cancelBrowseFill();
   browse.open = true;
   showCursor();

@@ -77,6 +77,7 @@ function normalize(slug, raw) {
     channelId: raw.id || null,
     name: (raw.user && raw.user.username) || slug,
     avatar: (raw.user && raw.user.profile_pic) || null,
+    thumbnail: live && raw.livestream.thumbnail ? (typeof raw.livestream.thumbnail === 'string' ? raw.livestream.thumbnail : raw.livestream.thumbnail.url || raw.livestream.thumbnail.src || null) : null,
     live: !!live,
     viewers: live ? (raw.livestream.viewer_count || 0) : 0,
     title: live ? (raw.livestream.session_title || '') : '',
@@ -96,6 +97,10 @@ function offlineStub(slug) {
 // live ones by viewer count, then pinned-but-offline, then everyone else
 // offline. The two offline groups are alphabetical.
 function sortOrder(favs) {
+  if (window.TVApp && state.sidebarOpen && state.order.length) {
+    state.order = state.order.filter(function (s) { return favs.indexOf(s) !== -1; }).concat(favs.filter(function (s) { return state.order.indexOf(s) === -1; }));
+    return;
+  }
   // 0 pinned-live, 1 live, 2 blocked-live, 3 pinned-offline, 4 offline.
   // A blocked live channel ignores its pin — that is the point of blocking.
   function grp(c) {
@@ -261,7 +266,7 @@ function alertAllowed(item) {
 // "is something in the way" checks below all build on it, so a new popup only
 // has to be added here and they cannot drift apart again.
 function anyPanelOpen() {
-  return !!(browse.open || vods.open || cats.open || chpop.open || settings.open || dimopt.open ||
+  return !!((window.TVApp && TVApp.page()) || (window.TVNavigation && TVNavigation.busy()) || browse.open || vods.open || cats.open || chpop.open || settings.open || dimopt.open ||
     chatopt.open || blockedcats.open || (qualityopt && qualityopt.open) || updateopen ||
     (wtw && wtw.open) || (backup && backup.open) || (vodNext && vodNext.open) || (raid && raid.open));
 }

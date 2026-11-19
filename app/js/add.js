@@ -19,6 +19,7 @@ function openAdd() {
   setTimeout(function () { if (state.mode === 'add' && add.zone === 'input') input.focus(); }, 50);
 }
 function closeAdd() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'search-input') { TVNavigation.pop(); return; }
   document.getElementById('addmodal').className = 'hidden';
   document.getElementById('addinput').blur();
   document.getElementById('addresults').innerHTML = '';
@@ -267,7 +268,8 @@ function addChannelBySlug(raw) {
     // Its data was fetched a moment ago, so sorting it into the list is local; the
     // other channels do not need fetching again for this.
     sortOrder(currentFavoritesWithData()); saveChannelCache();
-    if (wasAdd && !state.sidebarOpen) openSidebar(); else if (state.sidebarOpen) renderSidebar(slug);
+    if (wasAdd && window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'search-input') TVNavigation.pop();
+    else if (wasAdd && !state.sidebarOpen) openSidebar(); else if (state.sidebarOpen) renderSidebar(slug);
     if (!state.current && !state.vod && state.mode === 'player') showNothing();
     resetIdle();             // the list's idle timer ran out while the dialog was up
   });
