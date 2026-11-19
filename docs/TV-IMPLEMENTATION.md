@@ -82,6 +82,13 @@ panel ownership, source restoration after cold catalog reload, delayed
 responses, seek cancellation, first-run migration, chat reading, and undo.
 Design captures cover Home, Browse, Large, Settings, player, and docked chat.
 
+Remote CI has not been verified: the GitHub API reports Actions enabled but
+lists no workflows or runs for this fork, and attempting to enable `ci.yml`
+returns 404 despite the file being present on the default branch. Browser
+access was unavailable to inspect GitHub's Actions setup screen. The local
+checks above passed. Inspect the [fork's Actions page](https://github.com/ardaerbaharli/kick-tv-webos/actions)
+for any required first-time workflow activation.
+
 All app scripts were parsed as ES5. CSS was checked against Chromium 87 using
 the repository's compatibility check. The webOS CLI successfully packaged the
 app and service into `com.barisahmet.kicktv_1.0.0_all.ipk`. The local `.ipk` is
