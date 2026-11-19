@@ -77,6 +77,14 @@ test('pending restore cannot be replaced and damaged recovery records block star
   assert.equal(a.h.BackupRestore.recover().ok, false);
   assert.equal(a.store.get('kicktvbak.pendingrestore'), '{broken');
 });
+test('imported channel lists are bounded and validated before staging any writes', () => {
+  for (const list of [Array.from({ length: 2001 }, () => 'channel'), [{}], [null], ['x'.repeat(101)]]) {
+    const a = harness(new Map(Object.entries(original)));
+    assert.throws(() => a.h.BackupRestore.queue({ 'kicktv.added': JSON.stringify(list) }));
+    assert.deepEqual(profile(a.store), original);
+    assert(!a.store.has('kicktvbak.pendingrestore'));
+  }
+});
 
 test('failed recovery blocks boot and background refresh before they read partial data', () => {
   const callbacks = {}, calls = [], node = {};

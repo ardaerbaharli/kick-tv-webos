@@ -18,7 +18,7 @@ var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, OK: 13, BACK: 461,
 var state = {
   mode: 'player',        // which screen is showing: player, add, or confirm
   order: [],             // channel names in the order they appear in the list
-  channels: {},          // channel name to the data we fetched for it
+  channels: Object.create(null), // channel names are data, never prototype keys
   hls: null,
   current: null,         // the channel playing right now, or null when nothing is on
   sidebarOpen: false,

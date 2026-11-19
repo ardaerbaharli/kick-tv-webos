@@ -122,7 +122,9 @@ transport keys, and the Magic Remote pointer are optional shortcuts.
   interactive while loading, and late startup responses cannot interrupt navigation.
 - **Phone entry:** Home or Search → Add with phone reuses the local transfer
   server. Scan its QR code from a phone on the same network. Backup and restore
-  remain available under Data & support.
+  remain available under Data & support. Use a trusted home network: this local
+  HTTP transfer is not encrypted. Sharing closes when you leave the app;
+  reopening creates a new pairing token.
 
 Optional shortcuts: Red opens Quick settings; Green toggles chat; Yellow opens
 past videos for the current channel; Blue opens Browse; 0 toggles night dimming.

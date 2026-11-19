@@ -373,6 +373,11 @@ function pruneNotifications() {
   else pumpNotify();
 }
 function fmtViewers(n) {
+  // Some legacy rows build numeric badges as HTML. Never let an unexpected
+  // API string become markup, even when the count is below the K threshold.
+  n = (typeof n === 'number' || typeof n === 'string') ? Number(n) : 0;
+  if (!isFinite(n) || n < 0) n = 0;
+  n = Math.floor(Math.min(n, 9007199254740991));
   if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K';
   return String(n);
 }

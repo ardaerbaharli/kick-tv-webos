@@ -75,7 +75,8 @@ node --test tests/*.test.js
 node tests/run-browser.js
 ```
 
-The full unit run passes 143 checks. The browser run passes 580 checks across 24 suites, including
+At redesign checkpoint `86d69a3`, the full unit run passed 143 checks and the
+browser run passed 580 checks across 24 suites, including
 the original playback/chat/data regressions and the new `tv`, `tvjourneys`,
 `boot`, and `tvvisual` suites. Behavioral checks cover remote access, nested
 panel ownership, source restoration after cold catalog reload, delayed
@@ -94,6 +95,17 @@ the repository's compatibility check. The webOS CLI successfully packaged the
 app and service into `com.barisahmet.kicktv_1.0.0_all.ipk`. The local `.ipk` is
 ignored by Git; sideload it using webOS Dev Manager. Packaging alone does not
 certify hardware playback.
+
+The later security follow-up changes phone-sharing session revocation, HTTP
+limits, input validation, and CI token permissions. It adds mocked regression
+cases, but those new cases and the changed app have not been runtime-tested
+or repackaged: the security review requires an isolated execution sandbox,
+and neither Docker nor Colima was running. Syntax checks passed. Re-run the
+tests and rebuild before installing these security changes; the earlier `.ipk`
+does not contain them. Public OSV queries returned no advisories for hls.js
+1.7.3 and qrcode-generator 2.0.4, and both bundled files matched the published
+vendor files byte for byte. These checks do not establish the security of the
+TV's installed Node/OpenSSL versions or its Luna service permissions.
 
 Some old presentation assertions were updated to the accepted design: reveal
 controls before transport actions; use a visible Channels action instead of a

@@ -12,6 +12,12 @@ var BackupRestore = (function () {
     Object.keys(value).forEach(function (key) {
       if (!managed(key)) return;
       if (typeof value[key] !== 'string') throw new Error('Invalid backup value');
+      if (key === 'kicktv.added' || key === 'kicktv.removed' || key === 'kicktv.pinned') {
+        var list = JSON.parse(value[key]);
+        if (!Array.isArray(list) || list.length > 2000 || list.some(function (slug) {
+          return typeof slug !== 'string' || !slug || slug.length > 100;
+        })) throw new Error('Invalid channel list');
+      }
       out[key] = value[key];
     });
     return out;
@@ -74,5 +80,5 @@ var BackupRestore = (function () {
       return { ok: false, status: 'blocked' };
     }
   }
-  return { queue: queue, recover: recover };
+  return { queue: queue, recover: recover, validate: profile };
 })();

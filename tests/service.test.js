@@ -289,10 +289,11 @@ test('slow, oversized and unsendable requests still answer exactly once', () => 
   }
 });
 
-test('share server: page, backup download, restore inbox, token guard, stop', async () => {
+test('share server: page, backup download, restore inbox, token guard, stop', async (t) => {
   const h = harness();
   const call = (name, payload) => new Promise(resolve => h.handlers[name]({ payload, respond: resolve }));
   const token = 'abcdefghijkl1234';
+  t.after(async () => { await call('shareStop', { token }); });
   const started = await call('shareStart', { token, backup: '{"v":1}', names: ['<b>xqc</b>'] });
   assert.equal(started.ok, true);
   // Reached the way a phone reaches it, over the network address the TV would show.
@@ -303,14 +304,15 @@ test('share server: page, backup download, restore inbox, token guard, stop', as
   assert.match(page, /&lt;b&gt;xqc&lt;\/b&gt;/, 'channel names are escaped');
   assert.equal(await (await fetch(base + 'backup.json')).text(), '{"v":1}');
   assert.equal((await fetch('http://' + host + ':' + started.port + '/wrongtoken12345/')).status, 404);
-  const sent = await (await fetch(base + 'restore', { method: 'POST', body: JSON.stringify({ kind: 'names', data: ['a', 'b'] }) })).json();
+  const sent = await (await fetch(base + 'restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'names', data: ['a', 'b'] }) })).json();
   assert.equal(sent.ok, true);
-  const bad = await fetch(base + 'restore', { method: 'POST', body: '{"kind":"evil"}' });
+  const bad = await fetch(base + 'restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"kind":"evil"}' });
   assert.equal(bad.status, 400);
   const polled = await call('sharePoll', { token });
   assert.equal(JSON.stringify([polled.running, polled.visits, polled.inbox.kind, polled.inbox.data]), JSON.stringify([true, 1, 'names', ['a', 'b']]));
   assert.equal((await call('sharePoll', { token })).inbox, null, 'the inbox is handed over once');
   assert.equal((await call('sharePoll', { token: 'other' })).running, false);
-  await call('shareStop', {});
+  assert.equal((await call('shareStop', { token: 'wrong-token-value' })).ok, false);
+  await call('shareStop', { token });
   await assert.rejects(fetch(base));
 });

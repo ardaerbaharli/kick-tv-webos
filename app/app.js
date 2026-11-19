@@ -11,6 +11,7 @@
 document.addEventListener('visibilitychange', function () {
   if (backupRestoreBlocked) return;
   if (document.hidden) {
+    if (backup.open) closeBackup();
     cancelVodNext();
     saveVodProgress(true); saveLiveMark(true); pauseNotify();
     // Nobody is reading chat while another app is in front; parsing a busy room
@@ -35,7 +36,10 @@ document.addEventListener('visibilitychange', function () {
   if (PB.active && state.current) { PB.recoverCount = 0; recoverPlayback(state.current); } // a deliberate check, not a failure
   pumpNotify();
 });
-window.addEventListener('pagehide', function () { saveVodProgress(true); saveLiveMark(true); });
+window.addEventListener('pagehide', function () {
+  saveVodProgress(true); saveLiveMark(true);
+  if (backup.open) closeBackup();
+});
 // Handle the network coming back or dropping out.
 window.addEventListener('online', function () {
   if (backupRestoreBlocked) return;
