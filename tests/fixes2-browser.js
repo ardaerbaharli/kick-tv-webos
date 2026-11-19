@@ -57,13 +57,13 @@ window.runFixes2Tests = async function (assert) {
     // The idle screen stays behind a dialog that hid it.
     state.current = null;
     showNothing();
-    assert(document.getElementById('idle').className.indexOf('hidden') === -1, 'the idle screen shows when nothing plays');
+    assert(TVApp.page(), 'Home appears when nothing plays');
     openAdd();
     assert(document.getElementById('idle').className.indexOf('hidden') !== -1, 'the Add dialog hides it');
     showNothing();                                      // what the 30-second poll does
     assert(document.getElementById('idle').className.indexOf('hidden') !== -1, 'and a background refresh does not bring it back under the dialog');
     closeAdd();
-    assert(document.getElementById('idle').className.indexOf('hidden') === -1, 'closing the dialog does');
+    assert(TVApp.page(), 'closing the dialog returns to Home');
     state.current = liveCurrent; showState('hidden'); closeSidebar();
 
     // Live suggestions fetched for one Add dialog reach the dialog that is open when they arrive.

@@ -17,7 +17,7 @@ window.runFlowsTests = async function (assert) {
     assert(attached.length === 1, 'same-channel reselection also invalidates the old playback session');
     pending[3].cb(null, raw('Fresh Alpha'));
     assert(attached.join(',') === 'beta,alpha', 'only the current same-channel session starts');
-    returnToIdle(); closeSidebar();
+    returnToIdle(); closeSidebar(); TVApp.onPlaybackStart();
     var item = { video: { uuid: 'recording' }, source: 'https://fixture.invalid/vod.m3u8', duration: 1000000, session_title: 'Recording' };
     saveLastVod('alpha', item, 'Alpha');
     localStorage.setItem(VOD_PROGRESS_KEY, JSON.stringify({ version: 1, items: { 'alpha:recording': { position: 120, duration: 1000 } } }));
@@ -39,7 +39,7 @@ window.runFlowsTests = async function (assert) {
     assert(video.currentTime === 120 && state.vod.resumeApplied, 'metadata applies the saved resume point');
     video.currentTime = 140; video.dispatchEvent(new Event('seeked'));
     assert(savedVodPosition('alpha:recording') === 140, 'new playback progress is saved after resume');
-    returnToIdle(); closeSidebar();
+    returnToIdle(); closeSidebar(); TVApp.onPlaybackStart();
     saveLastVod('alpha', item, 'Alpha');
     resumeLastVodAtStartup(function (resumed, retryable) { result = { resumed: resumed, retryable: retryable }; });
     state.current = 'beta'; pending[6].cb(null, [item]);

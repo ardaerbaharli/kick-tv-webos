@@ -48,7 +48,26 @@ var TVPanels = (function () {
     var layer = { id: kind, legacy: true, open: opens[kind], close: closes[kind],
       restore: function () { TVApp.restoreFocus(); }, key: function (e) {
         if (e.keyCode === KEY.BACK) { TVNavigation.pop(); return true; }
-        return false;
+        var k = e.keyCode;
+        if (kind === 'quality') {
+          if (k === KEY.UP || k === KEY.DOWN) qualityoptMove(k === KEY.UP ? -1 : 1);
+          else if (k === KEY.OK || k === KEY.RIGHT) qualityoptActivate();
+          else if (k === KEY.LEFT) TVNavigation.pop();
+        } else if (kind === 'advancedChat') {
+          if (k === KEY.UP || k === KEY.DOWN) chatoptMove(k === KEY.UP ? -1 : 1);
+          else if (k === KEY.OK || k === KEY.RIGHT || k === KEY.LEFT) chatoptActivate(k === KEY.LEFT ? -1 : 1);
+        } else if (kind === 'dim') {
+          if (k === KEY.UP || k === KEY.DOWN) dimoptMove(k === KEY.UP ? -1 : 1);
+          else if (k === KEY.OK || k === KEY.RIGHT || k === KEY.LEFT) dimoptActivate(k === KEY.LEFT ? -1 : 1);
+        } else if (kind === 'blocked') {
+          if (k === KEY.UP || k === KEY.DOWN) blockedcatsMove(k === KEY.UP ? -1 : 1);
+          else if (k === KEY.OK || k === KEY.RIGHT) blockedcatsActivate();
+        } else if (kind === 'backup') backupKey(k);
+        else if (kind === 'updates') {
+          if (k === KEY.UP || k === KEY.DOWN) document.getElementById('update-notes').scrollTop += k === KEY.UP ? -120 : 120;
+          else if (k === KEY.OK) TVNavigation.pop();
+        }
+        return true;
       } };
     TVNavigation.push(layer);
   }
@@ -118,16 +137,24 @@ var TVPanels = (function () {
       ['Data & support', ['backup', 'diagnostics']]
     ];
     menu('Settings', groups.map(function (group) {
-      return button(group[0], function () {
+      var row = button(group[0], function () {
         var rows = settingsBuild().filter(function (it) { return group[1].indexOf(it.key || it.kind) !== -1; }).map(settingRow);
-        if (group[0] === 'Data & support') rows.push(button('Version & updates', function () { legacy('updates'); }, 'Kick TV · ' + (appVersion || '1.0.0')));
+        if (group[0] === 'Chat') {
+          rows = [button('Defaults for new channels', chatDefaults)];
+          if (chatStreamerSlug()) rows.push(button('Current channel', chat));
+        }
+        if (group[0] === 'Data & support') rows.push(button('Version & updates', function () {
+          if (updateInfo) legacy('updates');
+          else menu('Version & updates', [button('Check for updates', function () { checkForUpdate(); toast('Checking for updates…'); }), button('Back', function () { TVNavigation.pop(); })],
+            'Installed version: ' + (appVersion || '1.0.0') + '. Updates are installed from this fork’s GitHub Releases using webOS Dev Manager.');
+        }, 'Kick TV · ' + (appVersion || '1.0.0')));
         menu(group[0], rows);
-      }, '›');
+      }); row.value = '›'; return row;
     }), 'Your channels and preferences are saved on this TV.');
   }
   function save(slug) {
     if (isFavorite(slug)) return;
-    addFavorite(slug);
+    addFavorite(slug); TVApp.invalidate();
     if (state.tempChannel === slug) state.tempChannel = null;
     if (state.order.indexOf(slug) === -1 && state.channels[slug]) state.order.push(slug);
     apiGet(slug, function (err, raw) {
@@ -137,7 +164,7 @@ var TVPanels = (function () {
   }
   function remove(slug) {
     var pinned = isPinned(slug);
-    removeFavorite(slug);
+    removeFavorite(slug); TVApp.invalidate();
     if (state.current === slug) state.tempChannel = slug;
     state.order = state.order.filter(function (s) { return s !== slug; });
     saveChannelCache();
@@ -159,7 +186,7 @@ var TVPanels = (function () {
         else { save(slug); layer.rows = rows(); render(layer); }
       }));
       if (isFavorite(slug)) result.push(button(isPinned(slug) ? 'Unpin channel' : 'Pin channel', function () {
-        togglePin(slug); saveChannelCache(); layer.rows = rows(); render(layer);
+        togglePin(slug); TVApp.invalidate(); saveChannelCache(); layer.rows = rows(); render(layer);
       }));
       return result;
     }
@@ -218,6 +245,24 @@ var TVPanels = (function () {
       button(isCatBlocked(c.slug) ? 'Unblock category' : 'Block category', function () { toggleCatBlock(c.slug, c.name); applyBlockedChange(); done(); })
     ]);
   }
+  function defaultsPicker(name, choices) {
+    menu(name, choices.map(function (entry) {
+      return button(entry[0], function () {
+        var next = chatOptionsFrom(chatPreferences.defaults);
+        for (var key in entry[1]) if (Object.prototype.hasOwnProperty.call(entry[1], key)) next[key] = entry[1][key];
+        next.chat = false; chatPreferences.defaults = next; writeChatPreferences();
+        if (!chatStreamerSlug()) useChatOptions(next);
+        done();
+      });
+    }));
+  }
+  function chatDefaults() {
+    menu('Chat defaults', [
+      button('Text size', function () { defaultsPicker('Default chat text', [['Standard', { chatSize: 'medium' }], ['Large', { chatSize: 'large' }], ['Extra large', { chatSize: 'xlarge' }]]); }),
+      button('Background', function () { defaultsPicker('Default chat background', [['Solid dark', { chatBackground: 'black', chatTransparency: 0 }], ['Dimmed dark', { chatBackground: 'black', chatTransparency: 15 }], ['Light', { chatBackground: 'white', chatTransparency: 0 }]]); }),
+      button('Message timing', function () { defaultsPicker('Default message timing', [['Auto · match video', { chatDelay: -1 }], ['No delay', { chatDelay: 0 }], ['5 seconds', { chatDelay: 5 }], ['10 seconds', { chatDelay: 10 }]]); })
+    ], 'For new channels. Existing channel preferences stay as you set them. Chat starts off until you enable it.');
+  }
   function chat() {
     if (!chatStreamerSlug()) { toast('Play a stream to configure chat'); return; }
     applyStreamerChatPreferences();
@@ -229,6 +274,7 @@ var TVPanels = (function () {
             else {
               if (!settings.chat) toggleChat();
               settings.chatSeparate = i === 1 || i === 2;
+              settings.chatTransparency = 15;
               ChatWindow.preset(i === 2 ? 'left' : i === 1 ? 'right' : 'overlay');
               saveSettings(); applyChatStyle();
             }
@@ -257,13 +303,15 @@ var TVPanels = (function () {
     ], 'Read-only chat · For this channel');
   }
   function readChat() {
-    if (!settings.chat) toggleChat();
+    if (!settings.chat) TVApp.toggleChat();
     if (!settings.chat) return;
+    var readAction = 0;
     var layer = { id: 'read-chat', open: function () { box.classList.add('hidden'); TVPlayer.hide(); ChatWindow.remoteReading(true); document.getElementById('tv-chat-reading').classList.remove('hidden'); TVFocus.set(document.getElementById('tv-chat-live')); },
       close: function () { ChatWindow.remoteReading(false); document.getElementById('tv-chat-reading').classList.add('hidden'); },
       restore: function () { TVApp.restoreFocus(); }, key: function (e) {
         if (e.keyCode === KEY.BACK) TVNavigation.pop();
-        else if (e.keyCode === KEY.OK) ChatWindow.jump();
+        else if (e.keyCode === KEY.OK) { if (readAction) TVNavigation.pop(); else ChatWindow.jump(); }
+        else if (e.keyCode === KEY.LEFT || e.keyCode === KEY.RIGHT) { readAction = e.keyCode === KEY.RIGHT ? 1 : 0; TVFocus.set(document.getElementById(readAction ? 'tv-chat-done' : 'tv-chat-live')); }
         else if (e.keyCode === KEY.UP || e.keyCode === KEY.DOWN) ChatWindow.scroll(e.keyCode === KEY.UP ? -160 : 160);
         return true;
       } };

@@ -1,6 +1,6 @@
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench · anchor hue: Kick green
  * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
- * sRGB fallbacks are intentional: supported webOS engines predate OKLCH. */
+ * sRGB values are intentional: supported webOS engines predate OKLCH. */
 :root {
   --color-background: #101214;
   --color-surface: #1a1e22;
@@ -34,7 +34,4 @@
   --radius-panel: 16px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-short: 140ms;
-}
-@supports (color: oklch(50% 0 0)) {
-  :root { --color-brand: oklch(88% 0.27 137); --color-background: oklch(18% 0.005 250); }
 }

@@ -156,7 +156,7 @@ function saveChannelCache() {
     for (var i = 0; i < state.order.length; i++) {
       var s = state.order[i], c = state.channels[s];
       if (!c) continue;
-      out.channels[s] = { slug: s, name: c.name, avatar: c.avatar, live: c.live,
+      out.channels[s] = { slug: s, name: c.name, avatar: c.avatar, thumbnail: c.thumbnail || null, live: c.live,
                           viewers: c.viewers, title: c.title, category: c.category,
                           categorySlug: c.categorySlug || '', startedAt: c.startedAt || null,
                           playbackUrl: null, channelId: c.channelId || null, chatroomId: c.chatroomId || null,

@@ -2,9 +2,12 @@
 var TVPlayer = (function () {
   'use strict';
   var visible = false, index = 0, zone = 'actions', timer = null, ticker = null;
+  var connectingTimer = null;
   var pending = null, heldAt = 0, heldKey = 0, lastStep = 0;
   var actions = ['play', 'channels', 'chat', 'quality', 'more'];
   function el(id) { return document.getElementById(id); }
+  function available() { return actions.concat(el('tv-go-live').classList.contains('hidden') ? [] : ['live']); }
+  function actionNode(id) { return el(id === 'live' ? 'tv-go-live' : 'tv-action-' + id); }
   function active() { return !!(state.current || state.vod); }
   function range() {
     var video = el('video');
@@ -19,6 +22,10 @@ var TVPlayer = (function () {
   }
   function render() {
     if (!visible) return;
+    var chatBox = el('chat'), dock = chatBox.getAttribute('data-dock');
+    var split = settings.chat && settings.chatSeparate && (dock === 'left' || dock === 'right');
+    el('tv-player-controls').style.left = split && dock === 'left' ? chatBox.style.width : '0';
+    el('tv-player-controls').style.right = split && dock === 'right' ? chatBox.style.width : '0';
     var video = el('video'), c = state.channels[state.current] || {}, v = state.vod;
     el('tv-player-name').textContent = v ? v.name : (c.name || state.current || 'Opening stream');
     el('tv-player-title').textContent = v ? v.title : (c.title || '');
@@ -46,10 +53,11 @@ var TVPlayer = (function () {
   }
   function focus() {
     render();
-    TVFocus.set(zone === 'timeline' ? el('tv-timeline') : el('tv-action-' + actions[index]));
+    TVFocus.set(zone === 'timeline' ? el('tv-timeline') : actionNode(available()[Math.min(index, available().length - 1)]));
   }
   function show(pointer) {
     if (!active() || (window.TVApp && TVApp.page()) || state.sidebarOpen) return;
+    if (visible && pointer) { arm(); return; }
     visible = true;
     el('tv-player-controls').classList.remove('hidden');
     if (!ticker) ticker = setInterval(render, 1000);
@@ -58,6 +66,7 @@ var TVPlayer = (function () {
     arm();
   }
   function hide() {
+    clearTimeout(connectingTimer);
     visible = false; pending = null; zone = 'actions';
     clearTimeout(timer); clearInterval(ticker); ticker = null;
     el('tv-player-controls').classList.add('hidden');
@@ -67,8 +76,9 @@ var TVPlayer = (function () {
     arm();
     if (id === 'play') { var video = el('video'); if (video.paused) playVideo(video); else video.pause(); render(); arm(); }
     else if (id === 'channels') { hide(); openSidebar(); }
-    else if (id === 'chat') { toggleChat(); render(); }
+    else if (id === 'chat') { TVApp.toggleChat(); render(); }
     else if (id === 'quality') TVPanels.legacy('quality');
+    else if (id === 'live') { goLive(); render(); }
     else TVPanels.more();
   }
   function key(e) {
@@ -101,9 +111,9 @@ var TVPlayer = (function () {
         try { el('video').currentTime = pending; } catch (err) {}
         pending = null;
       } else if (k === KEY.DOWN) { pending = null; zone = 'actions'; }
-    } else if (k === KEY.LEFT || k === KEY.RIGHT) index = Math.max(0, Math.min(actions.length - 1, index + (k === KEY.LEFT ? -1 : 1)));
+    } else if (k === KEY.LEFT || k === KEY.RIGHT) index = Math.max(0, Math.min(available().length - 1, index + (k === KEY.LEFT ? -1 : 1)));
     else if (k === KEY.UP && range()) zone = 'timeline';
-    else if (k === KEY.OK) { activate(actions[index]); return true; }
+    else if (k === KEY.OK) { activate(available()[index]); return true; }
     focus(); arm(); return true;
   }
   function init() {
@@ -118,8 +128,21 @@ var TVPlayer = (function () {
       pending = null; render();
     });
     el('tv-go-live').addEventListener('click', function () { goLive(); render(); });
-    el('video').addEventListener('pause', function () { if (!TVNavigation.busy()) show(true); });
+    el('video').addEventListener('pause', function () { if (PB.active && !TVNavigation.busy()) show(true); });
+    el('video').addEventListener('playing', function () { clearTimeout(connectingTimer); });
     el('video').addEventListener('play', function () { render(); arm(); });
   }
-  return { init: init, show: show, hide: hide, key: key, render: render, visible: function () { return visible; }, restore: function () { show(); } };
+  function connecting() {
+    clearTimeout(connectingTimer);
+    if (!active()) return;
+    var owner = state.vod || state.current;
+    connectingTimer = setTimeout(function () {
+      if ((state.vod || state.current) !== owner || el('video').readyState >= 2 || TVApp.page() || TVNavigation.busy()) return;
+      TVPanels.menu('Still connecting', [TVPanels.button('Retry', function () {
+        TVNavigation.closeAll(); if (state.vod) attachVod(state.vod.source); else play(state.current);
+      }), TVPanels.button('Browse live', function () { TVApp.show('browse'); }), TVPanels.button('Keep waiting', function () { TVNavigation.pop(); })],
+      'The stream is taking longer than usual. You can keep waiting or choose something else.');
+    }, 8000);
+  }
+  return { connecting: connecting, init: init, show: show, hide: hide, key: key, render: render, visible: function () { return visible; }, restore: function () { show(); } };
 })();

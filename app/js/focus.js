@@ -8,6 +8,7 @@ var TVFocus = (function () {
   }
   function set(node, scroll) {
     if (!node || !document.documentElement.contains(node)) { clear(); return; }
+    if (current === node && document.activeElement === node) return;
     if (current !== node) clear();
     current = node; node.classList.add('tv-focused'); node.tabIndex = 0;
     if (!/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(node.tagName) && !node.hasAttribute('role')) node.setAttribute('role', 'button');

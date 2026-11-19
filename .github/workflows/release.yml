@@ -51,7 +51,7 @@ jobs:
         run: |
           export IPK="com.barisahmet.kicktv_${VERSION}_all.ipk"
           export SHA=$(sha256sum "$IPK" | cut -d' ' -f1)
-          node -e "const fs=require('fs'),e=process.env;fs.writeFileSync('org.webosbrew.manifest.json', JSON.stringify({id:'com.barisahmet.kicktv',version:e.VERSION,type:'web',title:'Kick TV',appDescription:'Watch Kick livestreams on your LG webOS TV. Unofficial.',iconUri:'https://raw.githubusercontent.com/barisahmet/kick-tv-webos/main/app/largeIcon.png',sourceUrl:'https://github.com/barisahmet/kick-tv-webos',rootRequired:false,ipkUrl:e.IPK,ipkHash:{sha256:e.SHA}}, null, 2));"
+          node -e "const fs=require('fs'),e=process.env;fs.writeFileSync('org.webosbrew.manifest.json', JSON.stringify({id:'com.barisahmet.kicktv',version:e.VERSION,type:'web',title:'Kick TV',appDescription:'Watch Kick livestreams on your LG webOS TV. Unofficial.',iconUri:'https://raw.githubusercontent.com/' + e.GITHUB_REPOSITORY + '/main/app/largeIcon.png',sourceUrl:'https://github.com/' + e.GITHUB_REPOSITORY,rootRequired:false,ipkUrl:e.IPK,ipkHash:{sha256:e.SHA}}, null, 2));"
           cat org.webosbrew.manifest.json
 
       - name: Publish the release

@@ -58,25 +58,9 @@ window.runSettingsTests = async function (assert) {
   assert(blockedcats.open, 'blocked categories label opens its subpage');
   closeBlockedCats(); closeSettings();
   settings.uiText = 'normal'; UIPolish.apply();
-  // A cached frame isolates placement from the network and image decode timing.
-  previewCache.beta = { t: Date.now(), url: 'fixture:beta', ready: true, bitmap: fixtureFrame() };
-  openSidebar(); state.sideFocus = state.sideItems.map(function (it) { return it.slug; }).indexOf('beta'); applySideFocus();
-  await fixtureWait(400);
-  var preview = el('sidepreview').getBoundingClientRect(), row = el('fav-list').children[state.sideFocus].getBoundingClientRect();
-  assert(!el('sidepreview').classList.contains('hidden'), 'hover preview is visible');
-  assert(Math.abs(preview.top + preview.height / 2 - row.top - row.height / 2) < 120, 'top sidebar preview stays beside its row');
-  assert(preview.left >= el('sidebar').getBoundingClientRect().right && preview.bottom <= 1056, 'preview clears the sidebar and screen edge');
-  var previewRow = el('fav-list').children[state.sideFocus];
-  previewRow.style.position = 'relative'; previewRow.style.top = '700px';
-  positionStreamPreview(el('sidepreview'), previewRow, el('sidebar'));
-  await fixtureWait(250);
-  assert(el('sidepreview').getBoundingClientRect().bottom <= 1056, 'preview near the bottom is clamped inside the screen');
-  previewRow.style.top = '';
-  positionStreamPreview(el('sidepreview'), previewRow, el('sidebar'));
-  await fixtureWait(250);
-  assert(el('sidepreview').getBoundingClientRect().top === preview.top, 'moving back to a top row resets preview placement');
+  openSidebar(); await fixtureWait();
+  assert(getComputedStyle(el('sidepreview')).display === 'none', 'Channels keeps a quiet switcher without a floating preview');
   var current = el('fav-list').querySelector('.current');
-  assert(getComputedStyle(current).borderLeftColor === 'rgb(83, 252, 24)', 'playing stream retains a green left indicator');
-  assert(getComputedStyle(current.querySelector('.favname'), '::before').content === 'none', 'playing stream has no triangle');
+  assert(getComputedStyle(current, '::after').content.indexOf('▶') !== -1, 'playing stream has a marker independent of focus');
   closeSidebar(); openSettings();
 };

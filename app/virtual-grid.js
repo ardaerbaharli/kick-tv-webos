@@ -34,7 +34,8 @@
     container.style.position = 'relative';
     container.appendChild(this.content);
     var self = this;
-    container.addEventListener('scroll', function () { self.schedule(); });
+    this.scrollHandler = function () { self.schedule(); };
+    container.addEventListener('scroll', this.scrollHandler);
     if (root.ResizeObserver) {
       this.observer = new root.ResizeObserver(function () { self.dirty = true; self.schedule(); });
       this.observer.observe(container);
@@ -43,7 +44,8 @@
       this.textObserver = new root.MutationObserver(function () { self.dirty = true; self.schedule(); });
       this.textObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     }
-    root.addEventListener('resize', function () { self.dirty = true; self.schedule(); });
+    this.resizeHandler = function () { self.dirty = true; self.schedule(); };
+    root.addEventListener('resize', this.resizeHandler);
   }
   VirtualGrid.prototype.schedule = function () {
     if (this.frame !== null) return;
@@ -153,6 +155,15 @@
   VirtualGrid.prototype.clear = function () {
     this.items = []; this.keys = []; this.focused = -1; this.lastSpan = null;
     this.removeOutside({}); this.content.style.height = '0px'; this.container.scrollTop = 0;
+  };
+  VirtualGrid.prototype.destroy = function () {
+    if (this.frame !== null) root.cancelAnimationFrame(this.frame);
+    this.frame = null;
+    this.container.removeEventListener('scroll', this.scrollHandler);
+    root.removeEventListener('resize', this.resizeHandler);
+    if (this.observer) this.observer.disconnect();
+    if (this.textObserver) this.textObserver.disconnect();
+    this.clear();
   };
   root.VirtualGrid = VirtualGrid;
 }(window));

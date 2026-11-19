@@ -1,11 +1,15 @@
 # Kick TV (Unofficial) for LG webOS
 
-Watch Kick livestreams on an LG webOS TV. It opens on your last stream and keeps
-your channels in a sidebar. No sign-in. You get live status, viewer counts,
-pinning, a live channel browser with categories, past videos (VODs) with chat
-replay, an optional read-only chat overlay with real Kick and
-7TV emotes and badges, quality options, low latency, raid follow, a sleep timer,
-and auto-advance to the next live channel.
+Watch Kick livestreams and recordings on an LG webOS TV, using arrows, OK,
+and Back. This fork redesigns the interface for a basic TV remote: a real Home
+screen, saved channels, Continue watching, consistent player controls, grouped
+settings, and remote-friendly chat layouts. No sign-in is required.
+
+The redesign is on the [`tv-ux-redesign`](../../tree/tv-ux-redesign) branch.
+It builds on [barisahmet/kick-tv-webos](https://github.com/barisahmet/kick-tv-webos)
+and retains its playback engine, bundled service, local data, and MIT license.
+Physical LG TV validation of the redesign is still pending; desktop fixtures
+cannot verify hardware video composition or real remote latency.
 
 This is an unofficial personal project. It is not affiliated with or endorsed by
 Kick, and it reads Kick's public web endpoints, so it can break if Kick changes
@@ -13,28 +17,18 @@ something. Use it at your own risk.
 
 ## Screenshots
 
-<table>
-<tr>
-<td width="50%"><img src="screenshots/player-chat.png" alt="Player with the live chat overlay"></td>
-<td width="50%"><img src="screenshots/browse.png" alt="Live channel browser"></td>
-</tr>
-<tr>
-<td align="center">Player with the read-only live chat overlay</td>
-<td align="center">Browse everything live, by language or category</td>
-</tr>
-<tr>
-<td width="50%"><img src="screenshots/sidebar.png" alt="Followed channels sidebar"></td>
-<td width="50%"><img src="screenshots/settings.png" alt="Settings menu"></td>
-</tr>
-<tr>
-<td align="center">Your channels, live ones first, with pins</td>
-<td align="center">Settings: chat, low latency, auto-advance, dim and more</td>
-</tr>
-</table>
+These captures show the redesigned interface running in the isolated desktop
+fixture. Channel names, artwork, counts, and chat messages are synthetic.
+The player capture uses no video source.
 
-The video looks black in these shots because webOS draws the stream on a
-hardware layer that screen captures cannot grab. On the TV it plays normally
-behind the interface.
+| Home | Browse |
+| --- | --- |
+| ![Home with live saved channels](screenshots/tv-home.png) | ![Four-column live browser](screenshots/tv-browse.png) |
+| Player | Settings |
+| ![Shared remote player controls](screenshots/tv-player.png) | ![Grouped TV settings](screenshots/tv-settings.png) |
+
+The original screenshots remain in `screenshots/` for reference. Actual webOS
+video plays on a separate hardware layer and may not appear in TV captures.
 
 ## Install
 
@@ -92,59 +86,49 @@ NODE_OPTIONS="--require ./shim.js" ares-install --device tv com.barisahmet.kickt
 
 ## Using it
 
-- First launch has no channels. Add one by its Kick name and it shows up in the
-  list.
-- After that it opens on your last channel if it is live.
-- Move the pointer or press left or right to open the channel list. It hides
-  again after a few seconds.
-- Click a live channel to watch. Hover one for the pin and remove buttons.
-  Pinned channels sit at the top while they are live.
-- Click an offline channel, or press the yellow button while watching, to see
-  that channel's past videos (VODs).
-- The green button toggles live chat. Chat starts off for new streamers;
-  enabling it affects only that streamer. Drag anywhere in chat to move it,
-  or any corner to resize it. Release near the left or right edge to dock
-  along that whole side; drag away to float again. Each channel remembers
-  every chat option, plus its size, position, and docking. A vertical Settings/Close bar sits beside chat and hides with
-  the scrollbar when the pointer leaves. Messages use the full box height.
-- Scroll inside chat to read earlier messages; **Jump to live** resumes following
-  new messages. Chat also returns to live five seconds after the pointer leaves;
-  returning before then keeps your place. The latest 160 messages stay without fading. Chat options include
-  black or white backgrounds with a transparency slider, text, filters, a layout reset,
-  and a message delay slider from Off to 60 seconds to match the video. **Separate chat** fits
-  the stream beside a docked chat; drag the inside edge to adjust its width.
-  **Resize preview** shows an outline while dragging and applies the video size
-  on release. This choice is saved for the streamer too.
-  The sidebar's refresh icon refreshes channels.
-- Chat opens with the room's recent messages and shows 7TV emotes as images.
-  Messages a moderator deletes, and those of a banned chatter, leave the window.
-  The pinned message, and a poll while one runs, stay above the messages;
-  subscriptions, gifted subs and incoming raids appear as single lines. **Event
-  messages** and **Pinned message** in the chat options turn those off.
-- A past video replays the chat from its stream, in step with the picture; the
-  green button toggles it there too.
-- When a streamer ends by raiding another channel, a countdown offers to follow.
-  **Stay**, or Back, keeps the current stream. **Follow raids** in Settings
-  turns this off.
-- **Sleep timer** in Settings stops playback and darkens the screen after 15
-  minutes to 3 hours. A warning shows for the last minute; any button then keeps
-  the stream on.
-- The blue button opens the live channel browser. Inside it, the yellow button
-  (or the Categories button) lets you browse by category.
-- The gear at the bottom right, or the red button, opens Settings: chat, low
-  latency, auto-advance, dimming, alerts, and interface options. Quality has its
-  own player button. **Big UI** offers larger labels without scaling the video.
-  On/off and two-choice settings use switches. Select the Live chat, Dim, or
-  Blocked categories label to open its options.
-  Other choices use pill selectors; alert duration and the burn-in timeout use
-  sliders. The remote wheel scrolls menus; the D-pad moves focus and adjusts values.
-- Browse, Categories, and Past videos keep only nearby cards and artwork mounted.
-  Recent category and VOD lists reopen from a bounded cache while refreshing.
-  With menus closed, directory polling slows to two minutes; live alerts may
-  arrive later. During a VOD with alerts off, directory polling stops.
-- Press Back once for an exit prompt, Back again to close.
+Everything essential works with **arrows, OK, and Back**. Colored buttons,
+transport keys, and the Magic Remote pointer are optional shortcuts.
 
-Your channels are saved on the TV only. The public build ships with none.
+- **Home:** browse live saved channels, resume recordings, search, or add channels
+  with your phone. Saved channels and progress stay on this TV.
+- **Navigation:** Left from the first content column enters the labeled navigation.
+  Up/Down chooses a destination; OK opens it. Right returns to content.
+- **Cards:** OK watches. Down enters the focused card’s Options button; OK opens
+  channel details, Save/Remove, Pin/Unpin, or recording actions. Down again moves
+  to the next content row. Removing a channel offers Undo and keeps its video playing.
+- **Browse:** Up from the first row reaches Categories and Filters. Filters are
+  drafts until Apply; Back cancels. Clear all filters recovers an empty result.
+  Categories also offer pin/block actions through Options.
+- **Player:** the first OK or arrow press reveals controls without pausing.
+  Left/Right chooses Play/Pause, Channels, Chat, Quality, More, and Go live when
+  applicable. Up enters the timeline when the media exposes a seekable window.
+  Left/Right previews a seek; OK applies it, and Back cancels it.
+- **Channels:** Up/Down chooses a channel, OK watches it, and Right opens its
+  options. Back closes the drawer. Opening Channels does not shrink the picture.
+- **Back:** closes one visible layer, hides player controls, then returns to the
+  browsing screen and item that started playback. At Home, Back offers Exit/Stay,
+  with Stay selected. Stop ends playback and returns Home.
+- **Chat:** More → Chat options offers Off, Right panel, Left panel, or Overlay;
+  width, text, and background presets; and advanced controls. Choices are saved
+  per streamer. Read chat uses Up/Down to scroll, OK to jump to live, and Back to
+  finish reading. Left/Right selects Jump to live or Done. Chat is read-only.
+- **Settings:** More → Quick settings offers quality, chat layout, sleep timer,
+  and night mode. All settings groups playback, appearance, discovery,
+  notifications, and data/support. Explicit panels stay open until dismissed.
+- **Text size:** Settings → Appearance & accessibility → Text size changes useful
+  UI text and uses three catalog columns in Large instead of four.
+- **Startup:** new installs open Home. Existing installs preserve Resume last
+  watched; change it under Settings → Playback → Open app to. The shell stays
+  interactive while loading, and late startup responses cannot interrupt navigation.
+- **Phone entry:** Home or Search → Add with phone reuses the local transfer
+  server. Scan its QR code from a phone on the same network. Backup and restore
+  remain available under Data & support.
+
+Optional shortcuts: Red opens Quick settings; Green toggles chat; Yellow opens
+past videos for the current channel; Blue opens Browse; 0 toggles night dimming.
+Channel +/- opens and steps through the Channels drawer. The sleep timer warning
+still accepts any button to keep watching. Screen protection dims idle or paused
+content and static screens; the first button wakes it without activating a control.
 
 ## How it works
 
@@ -158,13 +142,22 @@ package, nothing to set up.
 These checks use synthetic channels and storage. They do not connect to a TV.
 
 ```
-node --test tests/runtime.test.js tests/service.test.js
+node --test tests/*.test.js
 node tests/run-browser.js
 ```
 
 The browser runner uses a new headless Chrome profile, blocks external requests,
 and prints a temporary directory containing results and screenshots. Set
 `CHROME_PATH` if Chrome is installed somewhere other than the default macOS path.
+
+The automated compatibility floor is ES5 JavaScript and Chromium 87 CSS
+(the original project’s webOS 22 target). No new browser runtime dependencies
+are required. `tests/run-browser.js tv tvjourneys boot tvvisual` runs the new
+remote journeys, real startup fixture, and design captures; the default command
+also runs the retained streaming, chat, backup, and catalog regression suites.
+
+See [the implementation notes](docs/TV-IMPLEMENTATION.md) for validation and
+remaining physical-device checks, and [the design system](design.md) for UI rules.
 
 ## License
 

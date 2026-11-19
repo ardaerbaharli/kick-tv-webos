@@ -46,7 +46,7 @@ window.runChatlayoutTests = async function (assert) {
   settings.chatSeparate = true; applyChatStyle();
   openSidebar(); await fixtureWait();
   small = box(); video = document.getElementById('video').getBoundingClientRect();
-  assert(small.left >= 490 && small.bottom <= 831, 'docked chat fits beside sidebar inside the picture area');
+  assert(near(small.left, 0) && near(small.height, 1080), 'Channels keeps chat geometry stable instead of shrinking the video plane');
   assert(near(small.right, video.left), 'separate docked chat does not cover the reduced video');
   var width = small.width;
   pointer(document.getElementById('chat-divider'), 'pointerdown', small.right - 3, small.top + 150, 1);
@@ -60,6 +60,6 @@ window.runChatlayoutTests = async function (assert) {
   settings.chat = false; syncChat();
   openSidebar(); state.vod = { slug: 'alpha' }; document.getElementById('player').setAttribute('data-vod', ''); updateGear();
   video = document.getElementById('video').getBoundingClientRect();
-  assert(near(video.top, 40) && near(video.height, 690), 'VOD retains its sidebar picture layout');
+  assert(near(video.top, 0) && near(video.height, 1080), 'VOD keeps full video height while Channels overlays it');
   state.vod = null; document.getElementById('player').removeAttribute('data-vod'); closeSidebar();
 };

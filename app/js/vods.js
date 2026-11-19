@@ -463,6 +463,7 @@ function vodCatalogueKey(v) { return v.catalogueTerminal ? '__state' : (vodStabl
 function getVodGrid() {
   if (!vodGridView) vodGridView = new VirtualGrid(document.getElementById('vods-grid'), { columns: VOD_COLS, height: 366, onRender: function () {
     vodsFocusEl = catalogueMountedFocus(vodGridView, vods.gridIdx, vods.zone === 'grid', vodCardBaseOf);
+    if (window.TVApp) TVApp.catalogueRendered('vods', vodGridView);
   } });
   return vodGridView;
 }
@@ -782,6 +783,7 @@ function playVod(v, queue, queueIndex, slug, opts) {
   // playback actually starts.
   drawVodBar(resumeAt, knownDuration);
   attachVod(v.source);
+  if (window.TVPlayer) TVPlayer.connecting();
   showVodOverlay();
   syncChat();                    // replay this stream's chat if chat is on for the streamer
 }

@@ -48,8 +48,8 @@ window.runSleepTests = async function (assert) {
     assert(!settings.open, 'and is not also treated as its usual command (Red opens Settings)');
     assert(document.getElementById('toast').textContent === 'Sleep timer off', 'saying so');
     key(KEY.RED);
-    assert(settings.open, 'the next press works as normal');
-    closeSettings();
+    assert(TVNavigation.top() && document.getElementById('tv-sheet-title').textContent === 'Quick settings', 'the next press opens Quick settings');
+    TVNavigation.closeAll();
 
     // The pointer is a button too, wherever it lands.
     setSleepTimer(15); sleepTimer.deadline = Date.now() + 30000; tickSleepTimer();

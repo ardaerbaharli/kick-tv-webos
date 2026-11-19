@@ -7,7 +7,7 @@ const http = require('http');
 const cp = require('child_process');
 const root = path.resolve(__dirname, '..');
 const selected = process.argv.slice(2).filter(a => !a.startsWith('--'));
-const suites = selected.length ? selected : ['backup', 'import', 'library', 'autoplay', 'flows', 'settingscontrols', 'chatfollow', 'chatevents', 'chatlayout', 'headerfocus', 'details', 'settings', 'app', 'hotpaths', 'grid', 'visual', 'livebar', 'sleep', 'fixes', 'fixes2'];
+const suites = selected.length ? selected : ['backup', 'import', 'library', 'autoplay', 'flows', 'settingscontrols', 'chatfollow', 'chatevents', 'chatlayout', 'headerfocus', 'details', 'settings', 'app', 'hotpaths', 'grid', 'visual', 'livebar', 'sleep', 'fixes', 'fixes2', 'tv', 'tvjourneys', 'boot', 'tvvisual'];
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'kick-ui-browser-'));
 const artifacts = process.env.TEST_ARTIFACTS_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'kick-ui-results-'));
 fs.mkdirSync(artifacts, { recursive: true });
@@ -32,7 +32,7 @@ const server = http.createServer((req, res) => {
       data = data.toString().replace('<script src="hls.min.js"></script>', '<script src="/tests/fixture.js"></script>')
         .replace('<script src="favorites.js"></script>', '')
         .replace('</body>', suites.map(s => '<script src="/tests/' + s + '-browser.js"></script>').join('\n') + '</body>');
-    } else if (url.pathname === '/app/app.js') {
+    } else if (url.pathname === '/app/app.js' && !(req.headers.referer || '').includes('suite=boot')) {
       data = data.toString().replace(/\(function boot\(\) \{[\s\S]*$/, '');
     }
     res.setHeader('Content-Type', file.endsWith('.html') ? 'text/html' : file.endsWith('.css') ? 'text/css' : file.endsWith('.js') ? 'application/javascript' : 'application/json');
@@ -92,7 +92,7 @@ const server = http.createServer((req, res) => {
     const testName = 'run' + suite[0].toUpperCase() + suite.slice(1) + 'Tests';
     let checks = [], error = null;
     try { checks = await evaluate(`(async function () {
-      fixtureInit();
+      ${suite === 'boot' ? '' : 'fixtureInit();'}
       var checks = window.fixtureChecks = [];
       function assert(condition, message) { if (!condition) throw new Error(message); checks.push(message); }
       await window[${JSON.stringify(testName)}](assert);
@@ -108,6 +108,13 @@ const server = http.createServer((req, res) => {
     if (!error && (suite === 'library' || suite === 'autoplay')) await evaluate('setup' + suite[0].toUpperCase() + suite.slice(1) + 'Screenshot()');
     const shot = await send('Page.captureScreenshot', { format: 'png' }, sessionId);
     fs.writeFileSync(path.join(artifacts, suite + '.png'), Buffer.from(shot.data, 'base64'));
+    if (suite === 'tvvisual' && !error) {
+      for (const mode of ['home', 'browse', 'large', 'settings', 'player', 'chat']) {
+        await evaluate('setupTvvisualScreenshot(' + JSON.stringify(mode) + ')');
+        const screen = await send('Page.captureScreenshot', { format: 'png' }, sessionId);
+        fs.writeFileSync(path.join(artifacts, 'tv-' + mode + '.png'), Buffer.from(screen.data, 'base64'));
+      }
+    }
     if (suite === 'visual' && !error) {
       for (const mode of ['settings-normal', 'settings-large', 'settings-controls-normal', 'settings-controls-large', 'dim-large', 'chat-large', 'vods-long', 'vods-empty']) {
         await evaluate('setupVisualScreenshot(' + JSON.stringify(mode) + ')');

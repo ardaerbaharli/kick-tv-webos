@@ -256,7 +256,7 @@ function applySideFocus() {
   }
   sideFocusEl = swapFocus(list, sideFocusEl, row, sideBaseOf, state.playerToolFocus < 0);
   if (nextScroll !== scroll) list.scrollTop = nextScroll;
-  if (state.sidebarOpen) scheduleSidePreview();
+  if (state.sidebarOpen) { scheduleSidePreview(); if (window.TVFocus && !TVNavigation.busy()) TVFocus.set(row); }
 }
 /* Live thumbnail previews. A card shows the stream's current frame beside the
    focused list row — used by the sidebar and the quick-switch popup. The window

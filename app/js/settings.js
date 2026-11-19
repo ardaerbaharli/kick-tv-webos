@@ -134,7 +134,9 @@ function pickEnum(v, allowed, def) { for (var i = 0; i < allowed.length; i++) if
 function loadSettings() {
   var s = {};
   try { s = JSON.parse(localStorage.getItem('kicktv.settings')) || {}; } catch (e) {}
-  settings.startup = pickEnum(s.startup, ['home', 'resume'], localStorage.getItem(FIRSTRUN_KEY) ? 'resume' : 'home');
+  var previousInstall = false;
+  try { previousInstall = !!(localStorage.getItem(FIRSTRUN_KEY) || localStorage.getItem('kicktv.settings')); } catch (e) {}
+  settings.startup = pickEnum(s.startup, ['home', 'resume'], previousInstall ? 'resume' : 'home');
   settings.reducedMotion = s.reducedMotion === true;
   settings.lowlatency = !!s.lowlatency;
   settings.autoadvance = !!s.autoadvance;
@@ -157,6 +159,7 @@ function loadSettings() {
   settings.notifySec = nsec >= 5 && nsec <= 30 ? nsec : 10;
   var sm = parseInt(s.saverMin, 10);
   settings.saverMin = sm >= 0 && sm <= 10 ? sm : 1;
+  if (!s.startup) { settingsSerialized = null; saveSettings(); }  // migrate once, before the first-run marker is stamped
 }
 function saveSettings() {
   if (chatPreferences.active === chatStreamerSlug()) rememberChatPreferences();
@@ -382,6 +385,7 @@ function focusPanelRow(list, index, preserveScroll) {
     list._focusRow = next;
   }
   if (next && !preserveScroll) scrollIntoViewport(list, next, 6);
+  if (next && window.TVFocus && !preserveScroll) TVFocus.set(next);
   return next;
 }
 function applySettingsFocus(preserveScroll) {
@@ -571,7 +575,9 @@ function applyDimAwareUi() {
 }
 // Make a toggle take effect right away.
 function applyToggle(key) {
-  if (key === 'chat') {
+  if (key === 'reducedMotion') {
+    if (window.TVApp) TVApp.geometry();
+  } else if (key === 'chat') {
     syncChat();
     toast('Live chat ' + (settings.chat ? 'on' : 'off'));
   } else if (key === 'lowlatency') {
@@ -1201,7 +1207,7 @@ function blockedcatsActivate() {
 var updateInfo = null;      // { version, notes } once a newer release is found
 var updateopen = false;
 var appVersion = '';        // our own version, shown as a chip in the Settings header
-var GH_LATEST = 'https://api.github.com/repos/barisahmet/kick-tv-webos/releases/latest';
+var GH_LATEST = 'https://api.github.com/repos/ardaerbaharli/kick-tv-webos/releases/latest';
 // The version chip at the right of the Settings title: muted "vX" when current,
 // a clickable yellow "New" chip (opens the release notes) when an update is out.
 function renderSettingsVer() {

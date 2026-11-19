@@ -113,7 +113,7 @@
       longCard.classList.add('focused');
       assert(root.getComputedStyle(longCard).boxShadow === 'none', 'focused cards have a crisp edge without glow');
       preference.uiText = 'large'; UIPolish.apply();
-      assert(shortCard.offsetHeight === 394 && longCard.offsetHeight === 394, 'large text keeps both VOD cards at 394px');
+      assert(shortCard.offsetHeight === 492 && longCard.offsetHeight === 492, 'large text keeps VOD cards at the readable TV geometry');
       assert(longCard.querySelector('.bname').offsetHeight === 68, 'large VOD title reserves exactly two 34px lines');
       el('vods').classList.add('hidden');
       rows(el('settings-list'), 24, false); rows(el('chatopt-list'), 24, false); rows(el('qualityopt-list'), 9, true);
@@ -138,7 +138,7 @@
       var row = el('qualityopt-list').children[0]; row.classList.add('selected');
       assert(root.getComputedStyle(row).borderColor !== 'rgb(83, 252, 24)', 'selected quality does not claim the focus edge');
       row.classList.add('focused');
-      assert(root.getComputedStyle(row).borderColor === 'rgb(83, 252, 24)', 'focus owns the green edge on selected quality');
+      assert(root.getComputedStyle(row).borderColor === 'rgb(255, 255, 255)', 'focus owns the white edge on selected quality');
       var tool = el('settings-list').children[0]; tool.children[1].classList.add('on');
       assert(root.getComputedStyle(tool.children[1]).backgroundColor !== 'rgb(83, 252, 24)', 'enabled pills stay quieter than the focus edge');
       assert(root.getComputedStyle(tool).transitionDuration === '0s', 'setting focus changes are immediate');

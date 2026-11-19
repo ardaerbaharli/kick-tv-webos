@@ -18,7 +18,7 @@ function isStaticScreen() {
   // changing"; it no longer does, which left the guard unable to fire over an open panel.
   // The surf list only counts when it is the persistent stream-end one; normally it
   // auto-hides in seconds.
-  if (browse.open || cats.open || vods.open || (chpop.open && chpop.persistent)) return true;
+  if ((window.TVApp && TVApp.page()) || (window.TVNavigation && TVNavigation.busy()) || state.sidebarOpen || browse.open || cats.open || vods.open || (chpop.open && chpop.persistent)) return true;
   // a VOD is moving video too, so only an idle screen or a paused frame counts
   return (!state.current && !state.vod) || (v && v.paused);
 }

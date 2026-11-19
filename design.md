@@ -2,7 +2,7 @@
 
 The app is a TV workbench with a charcoal shell, content-led catalogs and clean video playback. The accepted brief and implementation backlog are in `docs/TV-UX-UI-PLAN.md`.
 
-Use one system across every screen. `app/tokens.css` owns semantic colors, spacing, fonts and radii; `app/tv-ui.css` owns the scoped shell and components. Existing styles continue to support advanced playback/chat tools during migration. Use sRGB fallbacks for older webOS engines and progressive OKLCH enhancement only where supported.
+Use one system across every screen. `app/tokens.css` owns semantic colors, spacing, fonts and radii; `app/tv-ui.css` owns the scoped shell and components. Existing styles continue to support advanced playback/chat tools during migration. Use sRGB tokens for the supported webOS engines; they predate OKLCH support.
 
 Use the system sans serif stack, regular-width body text, 48px page titles, 28px actions, and a 24px minimum for useful catalog information at the 1920×1080 logical canvas. Four columns in Standard, three in Large. Use an 8px spacing scale and 64px horizontal safe area. No remote font dependency.
 

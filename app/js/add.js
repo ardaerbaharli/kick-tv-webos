@@ -127,7 +127,8 @@ function backToInput() {
 }
 function selectAddResult() {
   var c = add.results[add.focus];
-  if (c) addChannelBySlug(c.slug);
+  if (c && window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'search-input') TVApp.searchResult(c);
+  else if (c) addChannelBySlug(c.slug);
 }
 /* Add suggestions: channels you watched without following (newest first), then
    the biggest live channels in your Browse languages, minus bot streams, blocked
@@ -161,10 +162,10 @@ function liveSuggestions(skip) {
     if (!slug || seen[slug] || out.length >= LIVE_SUGGEST_MAX || skip[slug] || isFavorite(slug)) return;
     seen[slug] = true;
     if (settings.hideBots && e.__bot) return;
-    var cat = e.categories[0];
+    var cat = e.categories && e.categories[0];
     if (cat && isCatBlocked(cat.slug)) return;
     if (browse.langs.length && browse.langs.indexOf(e.language) === -1) return;
-    out.push({ slug: slug, user: { username: e.channel.user.username || slug }, is_live: true,
+    out.push({ slug: slug, user: { username: (e.channel.user && e.channel.user.username) || slug }, is_live: true,
                __sub: fmtViewers(e.viewer_count) + ' watching' + (cat && cat.name ? ' \u00b7 ' + cat.name : '') });
   });
   return out;

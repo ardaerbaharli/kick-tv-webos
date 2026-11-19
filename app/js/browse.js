@@ -86,6 +86,7 @@ function catalogueMountedFocus(view, index, active, baseOf) {
 function getBrowseGrid() {
   if (!browseGridView) browseGridView = new VirtualGrid(document.getElementById('browse-grid'), { columns: BROWSE_COLS, height: 350, onRender: function () {
     browseFocusEl = catalogueMountedFocus(browseGridView, browse.gridIdx, browse.zone === 'grid', browseCardBaseOf);
+    if (window.TVApp) TVApp.catalogueRendered('browse', browseGridView);
   } });
   return browseGridView;
 }

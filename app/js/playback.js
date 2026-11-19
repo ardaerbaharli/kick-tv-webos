@@ -199,6 +199,7 @@ function play(slug, preserveLastVod, prefetchedRaw) {
   showState('hidden');
   updateGear();
   loadChannel(slug, false, prefetchedRaw);
+  if (window.TVPlayer) TVPlayer.connecting();
 }
 // A playback link carries a signed token that Kick issues for about ten minutes.
 // Read its expiry, and treat it as usable only with a margin left.
@@ -250,6 +251,7 @@ function loadChannel(slug, isRecovery, prefetchedRaw) {
       }
       toast('Kick API unreachable');
       returnToIdle();
+      if (window.TVApp) TVApp.playbackFailed('Can’t open this stream', slug);
       return;
     }
     var c = normalize(slug, raw);
@@ -257,7 +259,11 @@ function loadChannel(slug, isRecovery, prefetchedRaw) {
     start(c);
   }
   function start(c) {
-    if (!c.live || !c.playbackUrl) { advanceOrIdle(slug); return; }   // stream ended / offline
+    if (!c.live || !c.playbackUrl) {
+      if (window.TVApp && !isRecovery) { returnToIdle(); TVApp.returnToSource(); TVPanels.channel(slug); }
+      else advanceOrIdle(slug);
+      return;
+    }   // stream ended / offline
     PB.netWaits = 0;
     if (!isRecovery) rememberPlayback(slug, c.playbackUrl);
     saveLast(slug);

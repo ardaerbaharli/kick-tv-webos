@@ -27,12 +27,13 @@
 .tv-wordmark { font-size: 36px; font-weight: 900; letter-spacing: -2px; color: var(--color-brand); margin: 0 0 88px 16px; }
 .tv-wordmark span { font-weight: 400; letter-spacing: 0; color: var(--color-text); margin-left: var(--space-xs); }
 .tv-nav-item {
+  position: relative;
   display: flex; align-items: center; width: 100%; min-height: 76px; margin: 12px 0; padding: 12px 16px;
   border: 0; border-radius: var(--radius-control); background: transparent; color: var(--color-muted);
   font-size: 28px; line-height: 1.15; text-align: left; white-space: nowrap;
 }
 .tv-nav-item.is-selected { background: var(--color-surface); color: var(--color-text); }
-.tv-nav-item.is-selected::before { content: ''; width: 4px; height: 28px; background: var(--color-brand); position: absolute; left: 16px; border-radius: 2px; }
+.tv-nav-item.is-selected::before { content: ''; width: 4px; height: 28px; background: var(--color-brand); position: absolute; left: -16px; border-radius: 2px; }
 .tv-nav-icon { width: 32px; margin-right: 14px; text-align: center; font-size: 28px; }
 .tv-nav-foot { position: absolute; bottom: 54px; left: 48px; right: 12px; font-size: 21px; line-height: 1.5; color: var(--color-muted); }
 .tv-nav-foot small { display: block; font-size: 18px; color: var(--color-faint); }
@@ -47,6 +48,9 @@
 .tv-section h2 { font-size: 30px; line-height: 1.3; font-weight: 600; margin: 0 0 20px; }
 .tv-card-grid { display: flex; flex-wrap: wrap; align-content: flex-start; margin: 0 -12px; }
 .tv-card { box-sizing: border-box; width: 364px; height: 412px; background: var(--color-surface); margin: 8px 12px 24px; border-radius: var(--radius-card); overflow: visible; cursor: pointer; }
+.tv-card { position: relative; }
+.tv-ui .tv-card-main { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; border: 0; background: transparent; border-radius: var(--radius-card); }
+.tv-ui .tv-card-options, .tv-ui .tv-catalog-options { z-index: 2; }
 .tv-card-art { position: relative; height: 205px; background: var(--color-raised) center/cover no-repeat; border-radius: var(--radius-card) var(--radius-card) 0 0; overflow: hidden; }
 .tv-card-art.tv-card-avatar { background-size: 104px; background-repeat: no-repeat; }
 .tv-card-initial { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: 700; color: var(--color-muted); }
@@ -95,12 +99,19 @@
 .tv-page .bcard.focused, .tv-page .ccard.focused { border: 0; box-shadow: none; }
 .tv-catalog-options { position: absolute; bottom: 8px; left: 24px; }
 .tv-page .bcard.tv-focused .tv-catalog-options, .tv-page .ccard.tv-focused .tv-catalog-options { visibility: visible; }
+.tv-page .bcard:focus-within .tv-catalog-options, .tv-page .ccard:focus-within .tv-catalog-options { visibility: visible; }
+#tv-catalog-detail { display: none; }
+.tv-page #tv-catalog-tools:not(.hidden) ~ #tv-catalog-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; position: absolute; z-index: 64; left: 304px; right: 64px; bottom: 36px; max-height: 60px; overflow: hidden; font-size: 24px; line-height: 30px; color: var(--color-muted); pointer-events: none; }
 #tv-catalog-tools { position: absolute; left: 304px; right: 64px; top: 160px; z-index: 64; display: flex; justify-content: space-between; align-items: center; color: var(--color-muted); font-size: 22px; }
 #tv-catalog-tools .tv-button { margin-right: 16px; }
 #tv-catalog-tools > span { font-size: 21px; }
 #tv-catalog-summary { font-size: 24px; }
 .tv-ui #overlay, .tv-ui #vodbar, .tv-ui #livebar, .tv-ui #vodplay, .tv-ui #vodback, .tv-ui #vodfwd, .tv-ui #vodgolive, .tv-ui #vod-scrim, .tv-ui #player-tools, .tv-ui #cbguide, .tv-ui #sidepreview, .tv-ui #chpoppreview { display: none !important; }
 .tv-ui #sidebar { width: 520px; background: var(--color-surface); border-right: 1px solid var(--color-rule); z-index: 55; }
+.tv-ui #sidebar { transform: translateX(-522px); }
+.tv-ui #sidebar.open { transform: translateX(0); }
+.tv-ui #fav-list { height: 890px; }
+#tv-channel-help { padding: 20px 24px; color: var(--color-muted); font-size: 23px; border-top: 1px solid var(--color-rule); }
 .tv-ui #side-title { font-size: 30px; }
 .tv-ui .favrow { margin: 8px 16px; border-radius: var(--radius-control); }
 .tv-ui .favrow.focused { outline: 4px solid var(--color-focus); outline-offset: -4px; background: var(--color-raised); box-shadow: none; }
@@ -119,7 +130,7 @@
 #tv-player-timeline { display: flex; align-items: center; margin: 16px 0 28px; height: 52px; font-variant-numeric: tabular-nums; font-size: 26px; }
 #tv-time-current, #tv-time-end { min-width: 120px; }
 #tv-time-end { text-align: right; }
-#tv-timeline { flex: 1; min-width: 0; margin: 0 24px; cursor: pointer; accent-color: var(--color-brand); height: 28px; }
+#tv-timeline { flex: 1; min-width: 0; margin: 0 24px; cursor: pointer; -webkit-appearance: none; background: var(--color-rule); border-radius: 4px; height: 10px; }
 #tv-player-actions { display: flex; align-items: center; }
 #tv-player-actions button { min-height: 80px; margin-right: 20px; padding: 20px 32px; }
 #tv-action-play { min-width: 184px; }
@@ -144,10 +155,12 @@
 .tv-ui .srow.focused, .tv-ui .qpick.focused, .tv-ui #chatopt-list .srow.focused, .tv-ui .bcatrow.focused, .tv-ui .bcatlink.focused { border-color: var(--color-focus); background: var(--color-raised); }
 .tv-ui .srow, .tv-ui .qpick, .tv-ui #chatopt-list .srow { font-size: 28px; min-height: 72px; }
 .tv-ui #chat.csize-xlarge .cmsg { font-size: 36px; }
+.tv-ui #chat.docked #chat-scroll { margin-top: 54px; margin-bottom: 54px; }
 .tv-page #chat { visibility: hidden; }
 #tv-chat-reading { position: absolute; z-index: 98; bottom: 32px; left: 64px; display: flex; align-items: center; padding: 16px 24px; border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-text); font-size: 26px; }
 #tv-chat-reading .tv-button { margin-left: 24px; }
 .tv-ui #toast { z-index: 100; }
+.tv-ui #saver { z-index: 120; }
 .tv-ui.ui-text-large { --text-body: 32px; --text-small: 28px; --text-display: 52px; }
 .tv-ui.ui-text-large .tv-card, .tv-ui.ui-text-large .bcard, .tv-ui.ui-text-large #vods-grid .bcard { width: 493px; height: 492px; }
 .tv-ui.ui-text-large .tv-card-art, .tv-ui.ui-text-large .bthumb { height: 277px; }
@@ -157,6 +170,14 @@
 .tv-ui.ui-text-large .ccard { width: 493px; height: 374px; }
 .tv-ui.ui-text-large .cbanner { height: 277px; }
 .tv-ui.ui-text-large .tv-menu-row { font-size: 32px; min-height: 84px; }
+.tv-ui.ui-text-large .tv-nav-item { font-size: 32px; }
+.tv-ui.ui-text-large .tv-nav-icon { display: none; }
+body.tv-ui.tv-page.ui-text-large #browse-title, body.tv-ui.tv-page.ui-text-large #cats-title, body.tv-ui.tv-page.ui-text-large #vods-title { font-size: var(--text-display); }
 .tv-ui.ui-text-large .tv-menu-row > small, .tv-ui.ui-text-large .tv-menu-row > strong { font-size: 28px; }
 .tv-reduced-motion *, .tv-reduced-motion *::before, .tv-reduced-motion *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .tv-ui *, .tv-ui *::before, .tv-ui *::after { animation: none !important; transition: none !important; } }
+
+#tv-timeline::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 28px; border-radius: 5px; background: var(--color-focus); border: 0; }
+body.tv-ui.ui-text-large .srow, body.tv-ui.ui-text-large .qpick, body.tv-ui.ui-text-large #chatopt-list .srow { font-size: 32px; min-height: 80px; }
+body.tv-ui.ui-text-large .favname { font-size: 32px; }
+body.tv-ui.ui-text-large .favgame, body.tv-ui.ui-text-large .favtitle { font-size: 28px; }
