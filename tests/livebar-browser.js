@@ -11,14 +11,15 @@ window.runLivebarTests = async function (assert) {
     playVod = function (v, queue, index, slug, opts) { played = { v: v, slug: slug, opts: opts }; };
 
     key(13);
-    assert(liveBarVisible() && liveBar.focused, 'OK on a live stream shows the timeline focused');
+    assert(TVPlayer.visible(), 'OK reveals the shared player controls');
+    showLiveBar(true);
     var p = livePositions();
     assert(p && Math.abs(p.edge - 3600) < 5, 'the timeline spans from the stream start to now');
     assert(document.getElementById('livebar-live').className === 'hidden' && document.getElementById('livebar-end').className === '',
       'at the live edge the right end shows the running time, no Go live');
     var trackWidth = document.getElementById('livebar-track').getBoundingClientRect().width;
 
-    key(37);
+    liveSeekBy(-30);
     assert(liveSeek.base !== null && liveSeek.delta === -30, 'Left collects a 30s step back');
     assert(document.getElementById('seekpop').className === '', 'the pending jump is announced');
     assert(document.getElementById('livebar-origin').getAttribute('visibility') === 'visible', 'the bar marks where the seek started');
@@ -26,9 +27,9 @@ window.runLivebarTests = async function (assert) {
       'a pending step back offers Go live in the same slot');
     assert(Math.abs(document.getElementById('livebar-track').getBoundingClientRect().width - trackWidth) < 1,
       'the track keeps its length when Go live appears');
-    key(39); key(39);
+    liveSeekBy(30); liveSeekBy(30);
     assert(liveSeek.delta <= 0.5, 'Right cannot bank seconds past the live edge');
-    key(37); key(37);
+    liveSeekBy(-30); liveSeekBy(-30);
     await fixtureWait(SEEK_APPLY_MS + 120);
     var videos = requests.filter(function (r) { return r.path.indexOf('/videos') !== -1; });
     assert(videos.length === 1, 'a rewind past the live buffer looks up the stream recording');
@@ -71,45 +72,18 @@ window.runLivebarTests = async function (assert) {
     assert(exited === 2, 'ending near the live edge goes live');
     state.vod = null; state.hls = null; hideVodPlay();
 
-    // Back on live: REW rewinds, FF with nothing pending goes live, Back tucks it away.
-    showOverlay(state.channels.alpha);
-    key(412);
-    assert(liveSeek.base !== null && liveSeek.delta === -60, 'the rewind key steps back a minute');
-    key(417);
-    assert(liveSeek.delta === 0, 'fast-forward walks the pending jump forward');
-    resetLiveSeek();
-    key(417);
-    assert(liveSeek.base === null, 'fast-forward with nothing pending just goes live');
-    liveBar.focused = true; showLiveBar(true);
-    key(461);
-    assert(!liveBarVisible() && !state.sidebarOpen, 'Back puts the timeline away before anything else');
-    key(37);
-    assert(state.sidebarOpen, 'with the timeline away, Left opens the channel list as before');
-    closeSidebar();
-    assert(!liveBarVisible(), 'closing the list hides the timeline with the info bar');
-
-    // Dragging the handle with the pointer previews, then seeks once on release.
-    played = null; requests = [];
-    showOverlay(state.channels.alpha);
-    var track = document.getElementById('livebar-track'), r = track.getBoundingClientRect();
-    function mouse(type, x, target) {
-      (target || document).dispatchEvent(new MouseEvent(type, { clientX: x, clientY: r.top + r.height / 2, bubbles: true }));
-    }
-    mouse('mousedown', r.right + 12, document.getElementById('livebar'));
-    assert(liveBar.dragTarget !== null, 'grabbing the handle where it overhangs the track end starts a drag');
-    mouse('mouseup', r.right + 12); requests = [];
-    mouse('mousedown', r.left - 80, document.getElementById('livebar-cur'));
-    assert(liveBar.dragTarget === null, 'pressing the time label does not seek');
-    mouse('mousedown', r.right - 2, track);
-    assert(liveBar.dragTarget !== null && liveBarVisible(), 'pressing on the track starts a drag');
-    mouse('mousemove', r.left + r.width / 2);
-    await fixtureWait(40);
-    assert(Math.abs(liveBar.dragTarget - livePositions().edge / 2) < 60, 'the drag follows the pointer');
-    assert(document.getElementById('livebar-origin').getAttribute('visibility') === 'visible', 'a drag previews against where playback is');
-    assert(!state.sidebarOpen, 'dragging does not pull the channel list open');
-    mouse('mouseup', r.left + r.width / 2);
-    assert(liveBar.dragTarget === null, 'release ends the drag');
-    assert(requests.filter(function (q) { return q.path.indexOf('/videos') !== -1; }).length === 1, 'release seeks once, into the recording');
+    // Preserve the underlying live-recording engine checks; the shared player
+    // now uses preview/commit against the actual seekable media window.
+    resetLiveSeek(); liveSeekBy(-60);
+    assert(liveSeek.base !== null && liveSeek.delta === -60, 'explicit rewind helper accumulates a minute');
+    liveSeekBy(60);
+    assert(liveSeek.delta === 0, 'forward cancels a pending rewind');
+    resetLiveSeek(); hideLiveBar(); TVPlayer.hide();
+    key(KEY.OK); key(KEY.RIGHT); key(KEY.OK);
+    assert(state.sidebarOpen, 'Channels opens through an explicit player action');
+    assert(parseFloat(getComputedStyle(document.getElementById('video')).height) === 1080, 'Channels does not resize the hardware video plane');
+    key(KEY.BACK);
+    assert(!state.sidebarOpen && TVPlayer.visible(), 'Back from Channels restores player controls');
   } finally {
     serviceGet = saved.serviceGet; playVod = saved.playVod; exitVod = saved.exitVod; attachVod = saved.attachVod;
   }

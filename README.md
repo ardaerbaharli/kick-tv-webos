@@ -1,11 +1,23 @@
 # Kick TV (Unofficial) for LG webOS
 
-Watch Kick livestreams on an LG webOS TV. It opens on your last stream and keeps
-your channels in a sidebar. No sign-in. You get live status, viewer counts,
-pinning, a live channel browser with categories, past videos (VODs) with chat
-replay, an optional read-only chat overlay with real Kick and
-7TV emotes and badges, quality options, low latency, raid follow, a sleep timer,
-and auto-advance to the next live channel.
+Watch Kick livestreams and recordings on an LG webOS TV, using arrows, OK,
+and Back. This fork redesigns the interface for a basic TV remote: a real Home
+screen, saved channels, Continue watching, consistent player controls, grouped
+settings, and remote-friendly chat layouts. No sign-in is required.
+
+Download the latest `.ipk` from this fork's
+[Releases page](https://github.com/ardaerbaharli/kick-tv-webos/releases/latest).
+The first redesign release is
+[v1.7.0](https://github.com/ardaerbaharli/kick-tv-webos/releases/tag/v1.7.0).
+The source is on the [`tv-ux-redesign`](../../tree/tv-ux-redesign) branch.
+It builds on [barisahmet/kick-tv-webos](https://github.com/barisahmet/kick-tv-webos)
+and retains its playback engine, bundled service, local data, and MIT license.
+The app ID is `com.ardaerbaharli.kicktv`, with companion service
+`com.ardaerbaharli.kicktv.service`. It installs separately from the original app.
+Export a backup in the original app and restore it here to transfer your channels.
+
+Physical LG TV validation of the redesign is still pending; desktop fixtures
+cannot verify hardware video composition or real remote latency.
 
 This is an unofficial personal project. It is not affiliated with or endorsed by
 Kick, and it reads Kick's public web endpoints, so it can break if Kick changes
@@ -13,33 +25,25 @@ something. Use it at your own risk.
 
 ## Screenshots
 
-<table>
-<tr>
-<td width="50%"><img src="screenshots/player-chat.png" alt="Player with the live chat overlay"></td>
-<td width="50%"><img src="screenshots/browse.png" alt="Live channel browser"></td>
-</tr>
-<tr>
-<td align="center">Player with the read-only live chat overlay</td>
-<td align="center">Browse everything live, by language or category</td>
-</tr>
-<tr>
-<td width="50%"><img src="screenshots/sidebar.png" alt="Followed channels sidebar"></td>
-<td width="50%"><img src="screenshots/settings.png" alt="Settings menu"></td>
-</tr>
-<tr>
-<td align="center">Your channels, live ones first, with pins</td>
-<td align="center">Settings: chat, low latency, auto-advance, dim and more</td>
-</tr>
-</table>
+These captures show the redesigned interface running in the isolated desktop
+fixture. Channel names, artwork, counts, and chat messages are synthetic.
+The player capture uses no video source.
 
-The video looks black in these shots because webOS draws the stream on a
-hardware layer that screen captures cannot grab. On the TV it plays normally
-behind the interface.
+| Home | Browse |
+| --- | --- |
+| ![Home with live saved channels](screenshots/tv-home.png) | ![Four-column live browser](screenshots/tv-browse.png) |
+| Player | Settings |
+| ![Shared remote player controls](screenshots/tv-player.png) | ![Grouped TV settings](screenshots/tv-settings.png) |
+
+The original screenshots remain in `screenshots/` for reference. Actual webOS
+video plays on a separate hardware layer and may not appear in TV captures.
 
 ## Install
 
-LG does not allow apps like this in the Content Store, so you sideload it in
-Developer Mode.
+Install Kick TV through Developer Mode on a TV with webOS 10 or newer.
+[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) provides
+a desktop installation option for Windows, macOS, and Linux. No command line
+or LG SDK is required for this option.
 
 ### 1. Turn on Developer Mode
 
@@ -51,30 +55,42 @@ Developer Mode.
 4. Open Developer Mode again. Note the TV's IP address, and turn on Key Server to
    get a short passphrase.
 
-Developer Mode turns off after about 50 hours. Turn on auto renew if you want it
-to stay on. If it expires, your sideloaded apps disappear, so just enable it
-again and reinstall.
+Developer Mode has a session timer. Renew the session before the timer expires.
+webOS Dev Manager also provides tools for session renewal.
+If Developer Mode expires, enable it again and reinstall your apps.
 
-### 2. Install the app
+### 2. Install with webOS Dev Manager (recommended)
 
-The easy way, no command line: download the latest `.ipk` from the
-[Releases](../../releases) page and install it with
-[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop), a point
-and click tool. Add your TV with its IP and passphrase from step 1, then install
-the file.
+1. Download the desktop installer from the
+   [webOS Dev Manager releases](https://github.com/webosbrew/dev-manager-desktop/releases/latest).
+2. Install and open webOS Dev Manager on your computer.
+3. Connect your computer and TV to the same local network.
+4. Add your TV with its IP address and the passphrase shown in Developer Mode.
+5. Download the `.ipk` file from the
+   [latest Kick TV release](https://github.com/ardaerbaharli/kick-tv-webos/releases/latest).
+   For v1.7.0, the file is `com.ardaerbaharli.kicktv_1.7.0_all.ipk`.
+6. In webOS Dev Manager, select your TV. Install the downloaded `.ipk` file.
+7. Open Kick TV from the TV home screen.
+
+If you used the original app, export its backup before you transfer your data.
+Restore that backup in this version to transfer your channels and settings.
+The two apps have separate app IDs and storage.
+
+### Alternative: install from the command line
 
 Prefer the command line, or want to build it yourself? You need Node.js and the
 webOS CLI:
 
 ```
-npm install -g @webos-tools/cli
+npm ci --ignore-scripts
+export PATH="$PWD/node_modules/.bin:$PATH"
 ares-setup-device --add tv --info "host=YOUR_TV_IP" --info "port=9922" --info "username=prisoner"
-ares-package ./app ./services/com.barisahmet.kicktv.service -o .
-ares-install --device tv com.barisahmet.kicktv_1.0.0_all.ipk
+ares-package ./app ./services/com.ardaerbaharli.kicktv.service -o .
+ares-install --device tv com.ardaerbaharli.kicktv_1.0.0_all.ipk
 ```
 
 Launch it from the TV home screen, or with
-`ares-launch --device tv com.barisahmet.kicktv`.
+`ares-launch --device tv com.ardaerbaharli.kicktv`.
 
 If the install fails with `isDate is not a function`, that is a known bug in the
 webOS CLI on recent Node.js versions, not your setup. Either use webOS Dev
@@ -87,64 +103,56 @@ if (!util.isDate) util.isDate = (d) => Object.prototype.toString.call(d) === '[o
 ```
 
 ```
-NODE_OPTIONS="--require ./shim.js" ares-install --device tv com.barisahmet.kicktv_1.0.0_all.ipk
+NODE_OPTIONS="--require ./shim.js" ares-install --device tv com.ardaerbaharli.kicktv_1.0.0_all.ipk
 ```
 
 ## Using it
 
-- First launch has no channels. Add one by its Kick name and it shows up in the
-  list.
-- After that it opens on your last channel if it is live.
-- Move the pointer or press left or right to open the channel list. It hides
-  again after a few seconds.
-- Click a live channel to watch. Hover one for the pin and remove buttons.
-  Pinned channels sit at the top while they are live.
-- Click an offline channel, or press the yellow button while watching, to see
-  that channel's past videos (VODs).
-- The green button toggles live chat. Chat starts off for new streamers;
-  enabling it affects only that streamer. Drag anywhere in chat to move it,
-  or any corner to resize it. Release near the left or right edge to dock
-  along that whole side; drag away to float again. Each channel remembers
-  every chat option, plus its size, position, and docking. A vertical Settings/Close bar sits beside chat and hides with
-  the scrollbar when the pointer leaves. Messages use the full box height.
-- Scroll inside chat to read earlier messages; **Jump to live** resumes following
-  new messages. Chat also returns to live five seconds after the pointer leaves;
-  returning before then keeps your place. The latest 160 messages stay without fading. Chat options include
-  black or white backgrounds with a transparency slider, text, filters, a layout reset,
-  and a message delay slider from Off to 60 seconds to match the video. **Separate chat** fits
-  the stream beside a docked chat; drag the inside edge to adjust its width.
-  **Resize preview** shows an outline while dragging and applies the video size
-  on release. This choice is saved for the streamer too.
-  The sidebar's refresh icon refreshes channels.
-- Chat opens with the room's recent messages and shows 7TV emotes as images.
-  Messages a moderator deletes, and those of a banned chatter, leave the window.
-  The pinned message, and a poll while one runs, stay above the messages;
-  subscriptions, gifted subs and incoming raids appear as single lines. **Event
-  messages** and **Pinned message** in the chat options turn those off.
-- A past video replays the chat from its stream, in step with the picture; the
-  green button toggles it there too.
-- When a streamer ends by raiding another channel, a countdown offers to follow.
-  **Stay**, or Back, keeps the current stream. **Follow raids** in Settings
-  turns this off.
-- **Sleep timer** in Settings stops playback and darkens the screen after 15
-  minutes to 3 hours. A warning shows for the last minute; any button then keeps
-  the stream on.
-- The blue button opens the live channel browser. Inside it, the yellow button
-  (or the Categories button) lets you browse by category.
-- The gear at the bottom right, or the red button, opens Settings: chat, low
-  latency, auto-advance, dimming, alerts, and interface options. Quality has its
-  own player button. **Big UI** offers larger labels without scaling the video.
-  On/off and two-choice settings use switches. Select the Live chat, Dim, or
-  Blocked categories label to open its options.
-  Other choices use pill selectors; alert duration and the burn-in timeout use
-  sliders. The remote wheel scrolls menus; the D-pad moves focus and adjusts values.
-- Browse, Categories, and Past videos keep only nearby cards and artwork mounted.
-  Recent category and VOD lists reopen from a bounded cache while refreshing.
-  With menus closed, directory polling slows to two minutes; live alerts may
-  arrive later. During a VOD with alerts off, directory polling stops.
-- Press Back once for an exit prompt, Back again to close.
+Everything essential works with **arrows, OK, and Back**. Colored buttons,
+transport keys, and the Magic Remote pointer are optional shortcuts.
 
-Your channels are saved on the TV only. The public build ships with none.
+- **Home:** browse live saved channels, resume recordings, search, or add channels
+  with your phone. Saved channels and progress stay on this TV.
+- **Navigation:** Left from the first content column enters the labeled navigation.
+  Up/Down chooses a destination; OK opens it. Right returns to content.
+- **Cards:** OK watches. Down enters the focused card’s Options button; OK opens
+  channel details, Save/Remove, Pin/Unpin, or recording actions. Down again moves
+  to the next content row. Removing a channel offers Undo and keeps its video playing.
+- **Browse:** Up from the first row reaches Categories and Filters. Filters are
+  drafts until Apply; Back cancels. Clear all filters recovers an empty result.
+  Categories also offer pin/block actions through Options.
+- **Player:** the first OK or arrow press reveals controls without pausing.
+  Left/Right chooses Play/Pause, Channels, Chat, Quality, More, and Go live when
+  applicable. Up enters the timeline when the media exposes a seekable window.
+  Left/Right previews a seek; OK applies it, and Back cancels it.
+- **Channels:** Up/Down chooses a channel, OK watches it, and Right opens its
+  options. Back closes the drawer. Opening Channels does not shrink the picture.
+- **Back:** closes one visible layer, hides player controls, then returns to the
+  browsing screen and item that started playback. At Home, Back offers Exit/Stay,
+  with Stay selected. Stop ends playback and returns Home.
+- **Chat:** More → Chat options offers Off, Right panel, Left panel, or Overlay;
+  width, text, and background presets; and advanced controls. Choices are saved
+  per streamer. Read chat uses Up/Down to scroll, OK to jump to live, and Back to
+  finish reading. Left/Right selects Jump to live or Done. Chat is read-only.
+- **Settings:** More → Quick settings offers quality, chat layout, sleep timer,
+  and night mode. All settings groups playback, appearance, discovery,
+  notifications, and data/support. Explicit panels stay open until dismissed.
+- **Text size:** Settings → Appearance & accessibility → Text size changes useful
+  UI text and uses three catalog columns in Large instead of four.
+- **Startup:** new installs open Home. Existing installs preserve Resume last
+  watched; change it under Settings → Playback → Open app to. The shell stays
+  interactive while loading, and late startup responses cannot interrupt navigation.
+- **Phone entry:** Home or Search → Add with phone reuses the local transfer
+  server. Scan its QR code from a phone on the same network. Backup and restore
+  remain available under Data & support. Use a trusted home network: this local
+  HTTP transfer is not encrypted. Sharing closes when you leave the app;
+  reopening creates a new pairing token.
+
+Optional shortcuts: Red opens Quick settings; Green toggles chat; Yellow opens
+past videos for the current channel; Blue opens Browse; 0 toggles night dimming.
+Channel +/- opens and steps through the Channels drawer. The sleep timer warning
+still accepts any button to keep watching. Screen protection dims idle or paused
+content and static screens; the first button wakes it without activating a control.
 
 ## How it works
 
@@ -158,13 +166,50 @@ package, nothing to set up.
 These checks use synthetic channels and storage. They do not connect to a TV.
 
 ```
-node --test tests/runtime.test.js tests/service.test.js
+node --test tests/*.test.js
 node tests/run-browser.js
 ```
 
 The browser runner uses a new headless Chrome profile, blocks external requests,
 and prints a temporary directory containing results and screenshots. Set
 `CHROME_PATH` if Chrome is installed somewhere other than the default macOS path.
+
+The supported minimum is webOS 10 with Chromium 120. CI runs browser fixtures
+on Chrome 120 and current stable Chrome. Additional static checks enforce ES5
+JavaScript and Chromium 87 CSS, but do not certify older TVs. No new browser
+runtime dependencies are required. `tests/run-browser.js tv tvjourneys boot tvvisual` runs the new
+remote journeys, real startup fixture, and design captures; the default command
+also runs the retained streaming, chat, backup, and catalog regression suites.
+
+See [the implementation notes](docs/TV-IMPLEMENTATION.md) for validation and
+remaining physical-device checks, and [the design system](design.md) for UI rules.
+
+## CI and releases
+
+CI runs on pushes, pull requests, and manual dispatch. It uses locked development
+tooling from `package-lock.json`, runs unit and browser checks, and builds an IPK.
+Each successful build uploads a `webos-package` artifact containing the inspected
+IPK and its SHA-256 manifest. Browser screenshots and results are separate artifacts.
+
+To publish, push a plain version tag such as `v1.0.1` on the intended commit.
+The release workflow applies that version to both app and service metadata,
+runs all checks, and passes the verified package to a separate publishing job.
+Only that job receives release write permission; it installs no build dependencies.
+The manifest icon points at the exact source commit.
+
+Publishing starts with a draft and checks uploaded asset sizes and SHA-256 digests
+before making it public. Rerunning a failed publishing job repairs a draft using
+that run's build artifact. An already published release is left intact: a retry
+succeeds only when both files match. If a rebuild produces different bytes, use a
+new version tag. Do not move published tags. Releases for the same tag are serialized.
+
+The workflows use actions pinned to commit SHAs. Dependency and action updates
+are proposed by Dependabot. The fork's Actions must be enabled; successful runs
+are visible on its [Actions page](https://github.com/ardaerbaharli/kick-tv-webos/actions).
+The fork’s `main` branch requires the `check`, `browser (120.0.6099.109)`, and
+`browser (stable)` checks, including for administrators. Updates must pass against
+the current base branch; force pushes and branch deletion are disabled.
+Desktop fixtures do not replace physical TV playback and remote-control checks.
 
 ## License
 

@@ -524,7 +524,7 @@ function chatNameColor(hex, lightBackground) {
   return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 var chatRenderQueue = [], chatRenderFrame = null;
-function chatCovered() { return document.hidden || browse.open || cats.open || vods.open; }
+function chatCovered() { return document.hidden || (window.TVApp && TVApp.page()) || browse.open || cats.open || vods.open; }
 function addChatMessage(d, receivedAt) {
   if (!d || !(d.sender || d.notice)) return;
   if (settings.chatBots === 'hide' && isBotMessage(d)) return;
@@ -538,14 +538,18 @@ function flushChatRender() {
     chatRenderFrame = null;
     if (chatCovered()) return;
     var box = chatMessagesEl(), fragment = document.createDocumentFragment();
+    var sc = document.getElementById('chat-scroll'), beforeTop = sc.scrollTop, reading = ChatWindow.reading();
     var batch = chatRenderQueue.splice(0, 40);
     batch.forEach(function (entry) { fragment.appendChild(buildChatMessage(entry.data, entry.at)); });
     var emotes = fragment.querySelectorAll('img[data-ui-src]');   // only the new rows need watching
     box.appendChild(fragment);
+    var removedHeight = 0;
     while (box.children.length > CHAT_MAX) {
+      removedHeight += box.firstChild.getBoundingClientRect().height + (parseFloat(getComputedStyle(box.firstChild).marginTop) || 0);
       if (window.UIImages) UIImages.release(box.firstChild);
       box.removeChild(box.firstChild);
     }
+    if (reading && removedHeight) sc.scrollTop = Math.max(0, beforeTop - removedHeight);
     ChatWindow.messageAdded(batch.length);
     if (window.UIImages && emotes.length) UIImages.watchNodes(emotes);
     if (chatRenderQueue.length) flushChatRender();

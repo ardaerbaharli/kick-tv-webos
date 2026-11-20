@@ -1,51 +1,87 @@
 name: CI
 
-# The TV runs Chromium 87 (webOS 22). Desktop Chrome would happily run code the
-# TV cannot, so these checks pin the app to what that engine actually supports.
-
 on:
   push:
     branches: ['**']
   pull_request:
+  workflow_dispatch:
   workflow_call:
+    inputs:
+      release-tag:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - name: Check out the code
-        uses: actions/checkout@v5
-
-      - name: Set up Node
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          node-version: '22'
-
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22.23.5'
+          cache: npm
+      - name: Install locked tooling without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Release publishing regressions
+        run: python3 -m unittest discover -s tests -p 'workflows_test.py'
       - name: Unit tests
         run: node --test tests/*.test.js
-
-      - name: Browser regression tests
-        env:
-          CHROME_PATH: google-chrome
-          TEST_ARTIFACTS_DIR: ${{ runner.temp }}/kick-ui-results
-        run: node tests/run-browser.js
-
-      - name: Keep browser results and screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-results
-          path: ${{ runner.temp }}/kick-ui-results
-          if-no-files-found: ignore
-
       - name: App scripts parse as ES5
         run: |
           for f in app/*.js app/js/*.js; do
             [ "$f" = "app/hls.min.js" ] && continue
-            npx --yes acorn@8 --ecma5 --silent "$f" || { echo "::error file=$f::not valid ES5"; exit 1; }
+            node_modules/.bin/acorn --ecma5 --silent "$f"
           done
+      - name: CSS compatibility (stricter Chromium 87 baseline)
+        run: node .github/scripts/check-css.cjs
+      - name: Build and inspect the IPK and manifest
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag || '' }}
+        run: python3 .github/scripts/package.py
+      - name: Keep verified installable package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: webos-package
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: No CSS that Chromium 87 lacks
-        run: |
-          out=$(npx --yes doiuse@6 --browsers "chrome 87" app/*.css 2>/dev/null | grep -v "partially supported" || true)
-          if [ -n "$out" ]; then echo "$out"; exit 1; fi
+  browser:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        chrome: ['120.0.6099.109', 'stable']
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22.23.5'
+      - name: Set up minimum supported or current browser
+        id: chrome
+        uses: browser-actions/setup-chrome@48483d551c22a1fe6154c6a195ccc6d5773dc8c4 # v2
+        with:
+          chrome-version: ${{ matrix.chrome }}
+          install-dependencies: true
+      - name: Browser regression tests
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          TEST_ARTIFACTS_DIR: ${{ runner.temp }}/kick-ui-results
+        run: node tests/run-browser.js
+      - name: Keep browser results and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-results-${{ matrix.chrome }}
+          path: ${{ runner.temp }}/kick-ui-results
+          if-no-files-found: ignore
+          retention-days: 14

@@ -18,7 +18,7 @@ var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, OK: 13, BACK: 461,
 var state = {
   mode: 'player',        // which screen is showing: player, add, or confirm
   order: [],             // channel names in the order they appear in the list
-  channels: {},          // channel name to the data we fetched for it
+  channels: Object.create(null), // channel names are data, never prototype keys
   hls: null,
   current: null,         // the channel playing right now, or null when nothing is on
   sidebarOpen: false,
@@ -156,7 +156,7 @@ function saveChannelCache() {
     for (var i = 0; i < state.order.length; i++) {
       var s = state.order[i], c = state.channels[s];
       if (!c) continue;
-      out.channels[s] = { slug: s, name: c.name, avatar: c.avatar, live: c.live,
+      out.channels[s] = { slug: s, name: c.name, avatar: c.avatar, thumbnail: c.thumbnail || null, live: c.live,
                           viewers: c.viewers, title: c.title, category: c.category,
                           categorySlug: c.categorySlug || '', startedAt: c.startedAt || null,
                           playbackUrl: null, channelId: c.channelId || null, chatroomId: c.chatroomId || null,

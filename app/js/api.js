@@ -16,7 +16,7 @@ function serviceRequest(method, payload, cb) {
     } catch (e) { cb('parse'); }
   };
   try {
-    bridge.call('luna://com.barisahmet.kicktv.service/' + method, JSON.stringify(payload));
+    bridge.call('luna://com.ardaerbaharli.kicktv.service/' + method, JSON.stringify(payload));
   } catch (e) {
     if (!done) { done = true; clearTimeout(timer); cb('callfail'); }
   }
@@ -77,6 +77,7 @@ function normalize(slug, raw) {
     channelId: raw.id || null,
     name: (raw.user && raw.user.username) || slug,
     avatar: (raw.user && raw.user.profile_pic) || null,
+    thumbnail: live && raw.livestream.thumbnail ? (typeof raw.livestream.thumbnail === 'string' ? raw.livestream.thumbnail : raw.livestream.thumbnail.url || raw.livestream.thumbnail.src || null) : null,
     live: !!live,
     viewers: live ? (raw.livestream.viewer_count || 0) : 0,
     title: live ? (raw.livestream.session_title || '') : '',
@@ -96,6 +97,10 @@ function offlineStub(slug) {
 // live ones by viewer count, then pinned-but-offline, then everyone else
 // offline. The two offline groups are alphabetical.
 function sortOrder(favs) {
+  if (window.TVApp && state.sidebarOpen && state.order.length) {
+    state.order = state.order.filter(function (s) { return favs.indexOf(s) !== -1; }).concat(favs.filter(function (s) { return state.order.indexOf(s) === -1; }));
+    return;
+  }
   // 0 pinned-live, 1 live, 2 blocked-live, 3 pinned-offline, 4 offline.
   // A blocked live channel ignores its pin — that is the point of blocking.
   function grp(c) {
@@ -261,7 +266,7 @@ function alertAllowed(item) {
 // "is something in the way" checks below all build on it, so a new popup only
 // has to be added here and they cannot drift apart again.
 function anyPanelOpen() {
-  return !!(browse.open || vods.open || cats.open || chpop.open || settings.open || dimopt.open ||
+  return !!((window.TVApp && TVApp.page()) || (window.TVNavigation && TVNavigation.busy()) || browse.open || vods.open || cats.open || chpop.open || settings.open || dimopt.open ||
     chatopt.open || blockedcats.open || (qualityopt && qualityopt.open) || updateopen ||
     (wtw && wtw.open) || (backup && backup.open) || (vodNext && vodNext.open) || (raid && raid.open));
 }
@@ -368,6 +373,11 @@ function pruneNotifications() {
   else pumpNotify();
 }
 function fmtViewers(n) {
+  // Some legacy rows build numeric badges as HTML. Never let an unexpected
+  // API string become markup, even when the count is below the K threshold.
+  n = (typeof n === 'number' || typeof n === 'string') ? Number(n) : 0;
+  if (!isFinite(n) || n < 0) n = 0;
+  n = Math.floor(Math.min(n, 9007199254740991));
   if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K';
   return String(n);
 }

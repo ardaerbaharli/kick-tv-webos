@@ -17,3 +17,7 @@ tools/
 
 # Design docs and implementation plans — kept local, not for the public repo
 docs/
+
+# CI build output and Python tooling caches
+dist/
+__pycache__/

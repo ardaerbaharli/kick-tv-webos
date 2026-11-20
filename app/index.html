@@ -4,9 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=1920, user-scalable=no">
   <title>Kick TV</title>
+  <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="chat-window.css">
   <link rel="stylesheet" href="ui-polish.css">
+  <link rel="stylesheet" href="tv-ui.css">
 </head>
 <body>
   <div id="player" class="view">
@@ -81,6 +83,7 @@
       </div>
       <div id="fav-list"></div>
       <div id="fav-more-up" class="hidden"></div>
+      <div id="tv-channel-help">↑ ↓ Choose · → Options · Back Close</div>
     </div>
     <div id="sidepreview" class="hidden"><div class="prevtitle"></div></div>
     <div id="browse" class="hidden">
@@ -295,7 +298,7 @@
       <div id="backup-main">
         <canvas id="backup-qr" width="320" height="320"></canvas>
         <div id="backup-side">
-          <div id="backup-steps">Scan with your phone's camera. It needs to be on the same network as the TV.</div>
+          <div id="backup-steps">Scan with your phone's camera on the same trusted home network. The transfer uses local HTTP and closes when you leave the app.</div>
           <div id="backup-does">Download a backup, restore one, or add channels by typing their names on the phone.</div>
           <div id="backup-url"></div>
           <div id="backup-status"></div>
@@ -356,6 +359,39 @@
   <script src="js/whattowatch.js"></script>
   <script src="js/backup.js"></script>
   <script src="js/input.js"></script>
+  <nav id="tv-navigation" class="hidden" aria-label="Main navigation">
+    <div class="tv-wordmark">KICK<span>TV</span></div>
+    <div id="tv-nav-links"></div>
+    <button id="tv-return" class="tv-nav-item hidden" type="button">↗ Return to player</button>
+    <div class="tv-nav-foot">Your stream. Your seat.<small>Unofficial Kick client</small></div>
+  </nav>
+  <main id="tv-content" class="hidden">
+    <header class="tv-page-header"><h1 id="tv-page-title"></h1><p id="tv-page-description"></p></header>
+    <div id="tv-content-scroll"><div id="tv-page-actions"></div><div id="tv-page-content"></div></div>
+    <footer class="tv-footer">← Navigation <span>↑ ↓ Explore</span><span>OK Select</span><span>Back Return</span></footer>
+  </main>
+  <div id="tv-catalog-tools" class="hidden">
+    <div><button id="tv-catalog-categories" class="tv-button" type="button">Categories</button><button id="tv-catalog-filters" class="tv-button" type="button">Filters</button><span id="tv-catalog-summary"></span></div>
+    <span>↓ Options · OK Watch · ← Navigation</span>
+  </div>
+  <div id="tv-catalog-detail"></div>
+  <section id="tv-player-controls" class="hidden" aria-label="Playback controls">
+    <div class="tv-player-info"><span id="tv-player-state"></span><strong id="tv-player-name"></strong><h2 id="tv-player-title"></h2></div>
+    <div id="tv-player-timeline"><span id="tv-time-current"></span><input id="tv-timeline" aria-label="Playback timeline" type="range" step="1" tabindex="-1"><span id="tv-time-end"></span></div>
+    <div id="tv-player-actions">
+      <button id="tv-action-play" type="button">Play</button><button id="tv-action-channels" type="button">Channels</button><button id="tv-action-chat" type="button">Chat</button><button id="tv-action-quality" type="button">Quality</button><button id="tv-action-more" type="button">More</button><button id="tv-go-live" class="hidden" type="button">Go live</button>
+    </div><p id="tv-player-help"></p>
+  </section>
+  <div id="tv-sheet" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tv-sheet-title" aria-describedby="tv-sheet-note">
+    <div class="tv-sheet-panel"><header><h2 id="tv-sheet-title"></h2><button id="tv-sheet-back" class="tv-button" type="button" aria-label="Back">Back</button></header><p id="tv-sheet-note"></p><div id="tv-sheet-list"></div><footer>↑ ↓ Choose <span>OK Select</span><span>Back Return</span></footer></div>
+  </div>
+  <div id="tv-chat-reading" class="hidden"><span>Read chat · ↑ ↓ Scroll</span><button id="tv-chat-live" class="tv-button" type="button">Jump to live</button><button id="tv-chat-done" class="tv-button" type="button">Done</button></div>
+  <script src="js/focus.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/player-ui.js"></script>
+  <script src="js/tv-panels.js"></script>
+  <script src="js/tv-app.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

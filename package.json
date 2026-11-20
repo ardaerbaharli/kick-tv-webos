@@ -1,0 +1,11 @@
+{
+  "name": "kick-tv-webos-build",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Locked development tooling; not shipped in the TV application",
+  "devDependencies": {
+    "@webos-tools/cli": "3.2.6",
+    "acorn": "8.19.0",
+    "doiuse": "6.0.6"
+  }
+}

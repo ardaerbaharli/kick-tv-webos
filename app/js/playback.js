@@ -29,6 +29,7 @@ function idleModeForNothing() {
 // Show the correct idle screen. On a brand new setup with no channels, open the
 // menu straight away so the Add row is right there.
 function showNothing() {
+  if (window.TVApp) { if (!state.current && !state.vod && state.ready && !TVApp.page()) TVApp.show('home', null, true); if (TVApp.page()) { TVApp.refresh(); return; } }
   if (state.vod) return;                 // a past video is playing; never show an idle screen over it
   // The Add and confirm dialogs hide the idle screen so it does not show through
   // them, and bring it back when they close. A refresh in between leaves it hidden.
@@ -58,6 +59,7 @@ function listResumableVods(max) {
 }
 // Resolve a saved recording against a fresh videos list (URLs expire) and play it.
 function openSavedVod(slug, id) {
+  if (window.TVApp) { TVApp.resume({ slug: slug, id: id }); return; }
   if (!state.ready || state.current || state.vod) return;
   document.getElementById('idle-load').className = '';
   serviceGet('/api/v2/channels/' + encodeURIComponent(slug) + '/videos', function (err, data) {
@@ -145,6 +147,7 @@ function setBanner(msg) {
   hideSpinner();                 // the reconnecting banner replaces the plain buffering spinner
 }
 function teardownVideo() {
+  if (window.TVPlayer) TVPlayer.hide();
   cancelVodNext();
   cancelRaid();                   // an offer to follow a raid belongs to what was playing
   if (wtw.open) closeWhatToWatch();
@@ -178,6 +181,7 @@ function returnToIdle() {
 }
 function play(slug, preserveLastVod, prefetchedRaw) {
   if (!slug) return;
+  if (window.TVApp) TVApp.onPlaybackStart();
   teardownVideo();
   disconnectChat();          // drop the old channel's chat; the new one connects once it loads
   state.vod = null; state.vodReturn = null;   // leaving any past-video playback
@@ -195,6 +199,7 @@ function play(slug, preserveLastVod, prefetchedRaw) {
   showState('hidden');
   updateGear();
   loadChannel(slug, false, prefetchedRaw);
+  if (window.TVPlayer) TVPlayer.connecting();
 }
 // A playback link carries a signed token that Kick issues for about ten minutes.
 // Read its expiry, and treat it as usable only with a margin left.
@@ -246,6 +251,7 @@ function loadChannel(slug, isRecovery, prefetchedRaw) {
       }
       toast('Kick API unreachable');
       returnToIdle();
+      if (window.TVApp) TVApp.playbackFailed('Can’t open this stream', slug);
       return;
     }
     var c = normalize(slug, raw);
@@ -253,7 +259,11 @@ function loadChannel(slug, isRecovery, prefetchedRaw) {
     start(c);
   }
   function start(c) {
-    if (!c.live || !c.playbackUrl) { advanceOrIdle(slug); return; }   // stream ended / offline
+    if (!c.live || !c.playbackUrl) {
+      if (window.TVApp && !isRecovery) { returnToIdle(); TVApp.returnToSource(); TVPanels.channel(slug); }
+      else advanceOrIdle(slug);
+      return;
+    }   // stream ended / offline
     PB.netWaits = 0;
     if (!isRecovery) rememberPlayback(slug, c.playbackUrl);
     saveLast(slug);

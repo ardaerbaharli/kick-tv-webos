@@ -49,7 +49,7 @@ function openSidebar() {
     state.sidebarOpen = true;
     if (state.notifyCurrent) pauseNotify();
     document.getElementById('sidebar').className = 'open';
-    document.getElementById('player').classList.add('sidecollapse');
+    if (!window.TVApp) document.getElementById('player').classList.add('sidecollapse');
     sidePreviewArmed = !state.vod;      // in a VOD, wait for a move or a hover
     var prefer = (state.current && state.order.indexOf(state.current) !== -1)
       ? state.current : null;
@@ -106,12 +106,7 @@ function closeSidebarWithGrace() {
 // If nothing happens for a few seconds, close the sidebar. Any action restarts the timer.
 function resetIdle() {
   clearTimeout(state.idleTimer);
-  if (!state.sidebarOpen) return;
-  if (state.vod && (vodPointerHover || vodDragging)) return;
-  if (!getFavorites().length) return;   // onboarding: keep the menu up until they add a channel
-  state.idleTimer = setTimeout(function () {
-    if (state.mode === 'player') { closeSidebar(); hideCursor(); }
-  }, IDLE_MS);
+  // Opening Channels is deliberate. Do not hide it while the viewer is reading.
 }
 // Called when the pointer moves or Left is pressed. Open the sidebar and keep it up.
 function nudgeSidebar() {
@@ -261,7 +256,7 @@ function applySideFocus() {
   }
   sideFocusEl = swapFocus(list, sideFocusEl, row, sideBaseOf, state.playerToolFocus < 0);
   if (nextScroll !== scroll) list.scrollTop = nextScroll;
-  if (state.sidebarOpen) scheduleSidePreview();
+  if (state.sidebarOpen) { scheduleSidePreview(); if (window.TVFocus && !TVNavigation.busy()) TVFocus.set(row); }
 }
 /* Live thumbnail previews. A card shows the stream's current frame beside the
    focused list row — used by the sidebar and the quick-switch popup. The window

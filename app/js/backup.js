@@ -21,7 +21,7 @@ function lunaCall(method, params, cb) {
     try { r = JSON.parse(msg); } catch (e) {}
     if (r && r.ok) cb(null, r); else cb((r && r.error) || 'service');
   };
-  try { bridge.call('luna://com.barisahmet.kicktv.service/' + method, JSON.stringify(params || {})); }
+  try { bridge.call('luna://com.ardaerbaharli.kicktv.service/' + method, JSON.stringify(params || {})); }
   catch (e) { if (!done) { done = true; clearTimeout(timer); cb('callfail'); } }
 }
 function backupToken() {
@@ -40,7 +40,7 @@ function backupSnapshot() {
     }
   } catch (e) {}
   var favs = getFavorites();
-  return { app: 'com.barisahmet.kicktv', v: 1, at: new Date().toISOString(),
+  return { app: BackupRestore.appId, v: 1, at: new Date().toISOString(),
            channels: favs.map(function (s) { return (state.channels[s] && state.channels[s].name) || s; }),
            storage: storage };
 }
@@ -66,11 +66,13 @@ function openBackup() {
   touchSettings();
 }
 function closeBackup() {
+  if (window.TVNavigation && TVNavigation.top() && TVNavigation.top().id === 'backup') { TVNavigation.pop(); return; }
   cancelBackupImport();
   backup.open = false;
   clearInterval(backup.timer); backup.timer = null;
   document.getElementById('backupmodal').className = 'hidden';
-  lunaCall('shareStop', {}, function () {});
+  var token = backup.token; backup.token = ''; backup.url = '';
+  lunaCall('shareStop', { token: token }, function () {});
   if (settings.open) { renderSettings(); touchSettings(); }     // brings the row's description back
 }
 function startBackupShare() {
@@ -91,6 +93,7 @@ function startBackupShare() {
   });
 }
 function pollBackup() {
+  if (backup.open && document.hidden) { closeBackup(); return; }
   if (!backup.open || backup.busy) return;
   var token = backup.token;
   lunaCall('sharePoll', { token: token }, function (err, r) {
@@ -119,8 +122,9 @@ function drawBackupQr(text) {
 // Normalise what the phone typed into channel slugs: names or kick.com links.
 function backupSlugs(list) {
   var out = [];
-  (Array.isArray(list) ? list : []).forEach(function (raw) {
-    var s = String(raw || '').trim().toLowerCase()
+  (Array.isArray(list) ? list.slice(0, 1000) : []).forEach(function (raw) {
+    if (typeof raw !== 'string' || raw.length > 2048 || out.length >= 200) return;
+    var s = raw.trim().toLowerCase()
       .replace(/^https?:\/\/(www\.)?kick\.com\//, '').replace(/[\/?#].*$/, '');
     if (/^[a-z0-9_-]{1,40}$/.test(s) && out.indexOf(s) === -1) out.push(s);
   });
@@ -132,22 +136,29 @@ function backupFavsOf(storage) {
   try { removed = JSON.parse(storage['kicktv.removed'] || '[]') || []; } catch (e) {}
   if (!Array.isArray(added)) added = [];
   if (!Array.isArray(removed)) removed = [];
-  var favs = SEED_FAVORITES.concat(added).filter(function (s, i, a) {
-    return typeof s === 'string' && a.indexOf(s) === i && removed.indexOf(s) === -1;
+  var seen = Object.create(null), excluded = Object.create(null), favs = [];
+  removed.slice(0, 2000).forEach(function (s) { if (typeof s === 'string') excluded[s] = true; });
+  SEED_FAVORITES.slice(0, 2000).concat(added.slice(0, 2000)).forEach(function (s) {
+    if (typeof s !== 'string' || !s || s.length > 100 || seen[s] || excluded[s] || favs.length >= 2000) return;
+    seen[s] = true; favs.push(s);
   });
   return favs;
 }
 function receiveBackupInbox(inbox) {
   if (backup.busy) return;
+  if (!inbox || (inbox.kind !== 'backup' && inbox.kind !== 'names')) { setBackupStatus('Invalid transfer.'); return; }
   backup.importJob = null; backup.retryNames = []; updateBackupImportButtons();
   var q, choices;
   if (inbox.kind === 'backup') {
     var d = inbox.data;
-    if (!d || d.app !== 'com.barisahmet.kicktv' || !d.storage || typeof d.storage !== 'object') {
+    if (!d || !BackupRestore.acceptsApp(d.app) || d.v !== 1 ||
+        !d.storage || typeof d.storage !== 'object' || Array.isArray(d.storage)) {
       setBackupStatus('That file is not a Kick TV backup.'); return;
     }
+    try { d.storage = BackupRestore.validate(d.storage); }
+    catch (e) { setBackupStatus('That backup contains invalid data.'); return; }
     var n = backupFavsOf(d.storage).length;
-    q = 'Restore the backup' + (d.at ? ' from ' + String(d.at).slice(0, 10) : '') + ' with ' + n + ' channel' + (n === 1 ? '' : 's') + '?';
+    q = 'Restore the backup' + (typeof d.at === 'string' ? ' from ' + d.at.slice(0, 10) : '') + ' with ' + n + ' channel' + (n === 1 ? '' : 's') + '?';
     choices = [{ label: 'Replace everything', act: 'replace' }, { label: 'Add its channels', act: 'merge' }, { label: 'Ignore', act: 'ignore' }];
   } else {
     var slugs = backupSlugs(inbox.data).filter(function (s) { return !isFavorite(s); });

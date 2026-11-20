@@ -16,7 +16,7 @@
 var Service = require('webos-service');
 var https = require('https');
 
-var service = new Service('com.barisahmet.kicktv.service');
+var service = new Service('com.ardaerbaharli.kicktv.service');
 
 var UA = 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 ' +
          '(KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36';
@@ -306,14 +306,24 @@ var os = require('os');
 var SHARE_PORT = 8764;
 var SHARE_IDLE_MS = 20000;              // the app polls every 2s while the popup is open
 var SHARE_MAX_UPLOAD = 2 * 1024 * 1024;
+var SHARE_UPLOAD_MS = 15000, SHARE_CONNECTION_MS = 30000;
 var share = { server: null, port: 0, token: '', backup: '', names: [], inbox: null,
-              lastPoll: 0, visits: 0, idleTimer: null };
+              lastPoll: 0, visits: 0, idleTimer: null, generation: 0, pendingServer: null };
+
+function privateAddress(ip) {
+  ip = String(ip || '').replace(/^::ffff:/, '');
+  var parts = ip.split('.');
+  if (parts.length !== 4 || parts.some(function (p) { return !/^\d{1,3}$/.test(p) || Number(p) > 255; })) return false;
+  var first = Number(parts[0]), second = Number(parts[1]);
+  return first === 10 || first === 127 || (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168) || (first === 169 && second === 254);
+}
 
 function lanAddresses() {
   var out = [], ifs = os.networkInterfaces();
   Object.keys(ifs).forEach(function (name) {
     (ifs[name] || []).forEach(function (a) {
-      if ((a.family === 'IPv4' || a.family === 4) && !a.internal) out.push(a.address);
+      if ((a.family === 'IPv4' || a.family === 4) && !a.internal && privateAddress(a.address)) out.push(a.address);
     });
   });
   // Private home ranges first; anything else (link-local and so on) is a last resort.
@@ -322,8 +332,17 @@ function lanAddresses() {
 }
 
 function stopShare() {
+  share.generation++;
+  share.token = '';
   if (share.idleTimer) { clearInterval(share.idleTimer); share.idleTimer = null; }
-  if (share.server) { try { share.server.close(); } catch (e) {} share.server = null; }
+  var servers = [share.server, share.pendingServer];
+  share.server = null; share.pendingServer = null;
+  servers.forEach(function (server) {
+    if (!server) return;
+    try { server.close(); } catch (e) {}
+    (server.shareSockets || []).slice().forEach(function (socket) { socket.destroy(); });
+    if (server.finishShareStart) server.finishShareStart('stopped');
+  });
   share.port = 0; share.inbox = null; share.backup = ''; share.names = []; share.visits = 0;
 }
 
@@ -369,8 +388,19 @@ function sharePage() {
 }
 
 function shareHandler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+  var socket = req.socket || req.connection, host = req.headers.host;
+  var addresses = lanAddresses().concat(['127.0.0.1', 'localhost']);
+  var validHost = addresses.some(function (address) { return host === address + ':' + share.port; });
+  if (!socket || !privateAddress(socket.remoteAddress) || !validHost) { res.writeHead(403); res.end(); return; }
   var parts = String(req.url || '').split('?')[0].split('/');   // ['', token, file]
-  if (parts[1] !== share.token || !share.token) { res.writeHead(404); res.end(); return; }
+  if (!share.server || Date.now() - share.lastPoll > SHARE_IDLE_MS ||
+      parts.length > 3 || parts[1] !== share.token || !share.token) { res.writeHead(404); res.end(); return; }
+  var generation = share.generation;
   var file = parts[2] || '';
   function json(code, obj) {
     res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -392,16 +422,40 @@ function shareHandler(req, res) {
     return;
   }
   if (req.method === 'POST' && file === 'restore') {
-    var size = 0, chunks = [], over = false;
+    // The token is a session capability. A request accepted in an old pairing
+    // must never enqueue into a replacement session, even if its body ends later.
+    if (req.headers.origin && req.headers.origin !== 'http://' + host) { json(403, { ok: false, error: 'bad origin' }); return; }
+    if (String(req.headers['content-type'] || '').split(';')[0].toLowerCase() !== 'application/json') {
+      json(415, { ok: false, error: 'expected JSON' }); return;
+    }
+    var owner = share.server;
+    if ((owner.shareUploads || 0) >= 2) { json(429, { ok: false, error: 'busy' }); return; }
+    if (Number(req.headers['content-length']) > SHARE_MAX_UPLOAD) { json(413, { ok: false, error: 'too large' }); return; }
+    owner.shareUploads = (owner.shareUploads || 0) + 1;
+    var size = 0, chunks = [], over = false, released = false;
+    var deadline = setTimeout(function () { over = true; release(); req.destroy(); }, SHARE_UPLOAD_MS);
+    function release() {
+      if (released) return;
+      released = true; clearTimeout(deadline); owner.shareUploads--; chunks = [];
+    }
+    req.on('error', function () { over = true; release(); });
+    req.on('aborted', function () { over = true; release(); });
+    res.on('close', release);
     req.on('data', function (c) {
+      if (over || released) return;
       size += c.length;
-      if (size > SHARE_MAX_UPLOAD) { over = true; req.destroy(); return; }
+      if (size > SHARE_MAX_UPLOAD) { over = true; release(); req.destroy(); return; }
       chunks.push(c);
     });
     req.on('end', function () {
-      if (over) return;
+      if (over || released) return;
+      if (generation !== share.generation || share.server !== owner || parts[1] !== share.token) {
+        release(); json(410, { ok: false, error: 'expired session' }); return;
+      }
       var body;
-      try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (e) { json(400, { ok: false, error: 'not JSON' }); return; }
+      try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+      catch (e) { release(); json(400, { ok: false, error: 'not JSON' }); return; }
+      release();
       if (!body || (body.kind !== 'backup' && body.kind !== 'names') || body.data === undefined) {
         json(400, { ok: false, error: 'unknown request' }); return;
       }
@@ -415,21 +469,45 @@ function shareHandler(req, res) {
 
 function startShare(cb) {
   if (share.server) { cb(null); return; }
+  if (share.pendingServer) { share.pendingServer.shareCallbacks.push(cb); return; }
   var server = http.createServer(shareHandler);
+  server.shareSockets = []; server.shareCallbacks = [cb];
+  server.maxConnections = 16;
+  server.setTimeout(10000, function (socket) { socket.destroy(); });
+  share.pendingServer = server;
+  var settled = false;
+  server.finishShareStart = function (err) {
+    if (settled) return;
+    settled = true;
+    var callbacks = server.shareCallbacks; server.shareCallbacks = [];
+    callbacks.forEach(function (callback) { callback(err); });
+  };
+  server.on('connection', function (socket) {
+    if (share.server !== server && share.pendingServer !== server) { socket.destroy(); return; }
+    server.shareSockets.push(socket);
+    var deadline = setTimeout(function () { socket.destroy(); }, SHARE_CONNECTION_MS);
+    socket.on('close', function () {
+      clearTimeout(deadline);
+      var at = server.shareSockets.indexOf(socket); if (at !== -1) server.shareSockets.splice(at, 1);
+    });
+  });
   var triedFallback = false;
   server.on('error', function (e) {
+    if (share.server !== server && share.pendingServer !== server) { server.finishShareStart('stopped'); return; }
     // our usual port taken (another copy, another app): any free port will do
     if (!triedFallback && e && e.code === 'EADDRINUSE') { triedFallback = true; server.listen(0, '0.0.0.0'); return; }
-    if (share.server === server) stopShare();
-    cb(String(e && e.message || e));
+    if (share.server === server || share.pendingServer === server) stopShare();
+    server.finishShareStart(String(e && e.message || e));
   });
   server.on('listening', function () {
+    if (share.pendingServer !== server) { try { server.close(); } catch (e) {} return; }
+    share.pendingServer = null;
     share.server = server;
     share.port = server.address().port;
     share.idleTimer = setInterval(function () {
       if (Date.now() - share.lastPoll > SHARE_IDLE_MS) stopShare();
     }, 5000);
-    cb(null);
+    server.finishShareStart(null);
   });
   server.listen(SHARE_PORT, '0.0.0.0');
 }
@@ -437,12 +515,19 @@ function startShare(cb) {
 // payload: { token, backup (JSON text), names (display names) }
 service.register('shareStart', function (message) {
   var p = message.payload || {};
-  if (typeof p.token !== 'string' || !/^[A-Za-z0-9]{12,64}$/.test(p.token) || typeof p.backup !== 'string') {
+  if (typeof p.token !== 'string' || !/^[A-Za-z0-9]{16,64}$/.test(p.token) ||
+      typeof p.backup !== 'string' || Buffer.byteLength(p.backup, 'utf8') > SHARE_MAX_UPLOAD) {
     message.respond({ ok: false, error: 'bad request' }); return;
+  }
+  if (share.token !== p.token) {
+    share.generation++; share.inbox = null; share.visits = 0;
+    if (share.server) (share.server.shareSockets || []).slice().forEach(function (socket) { socket.destroy(); });
   }
   share.token = p.token;
   share.backup = p.backup;
-  share.names = Array.isArray(p.names) ? p.names.slice(0, 2000).map(String) : [];
+  share.names = Array.isArray(p.names) ? p.names.slice(0, 2000).filter(function (name) {
+    return typeof name === 'string';
+  }).map(function (name) { return name.slice(0, 160); }) : [];
   share.lastPoll = Date.now();
   startShare(function (err) {
     if (err) { message.respond({ ok: false, error: err }); return; }
@@ -453,14 +538,18 @@ service.register('shareStart', function (message) {
 // Hands over whatever the phone sent since the last poll (once), and keeps the server alive.
 service.register('sharePoll', function (message) {
   var p = message.payload || {};
-  share.lastPoll = Date.now();
-  var running = !!share.server && p.token === share.token;
+  var running = !!share.server && !!share.token && p.token === share.token;
+  if (running) share.lastPoll = Date.now();
   var inbox = running ? share.inbox : null;
   if (running) share.inbox = null;
   message.respond({ ok: true, running: running, visits: running ? share.visits : 0, inbox: inbox });
 });
 
 service.register('shareStop', function (message) {
+  var token = message.payload && message.payload.token;
+  if (!share.token || typeof token !== 'string' || token !== share.token) {
+    message.respond({ ok: false, error: 'bad token' }); return;
+  }
   stopShare();
   message.respond({ ok: true });
 });

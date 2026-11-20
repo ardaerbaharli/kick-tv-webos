@@ -10,6 +10,7 @@ function catKey(c) { return c.catalogueTerminal ? '__state' : (c.all ? '__all' :
 function getCatsGrid() {
   if (!catsGridView) catsGridView = new VirtualGrid(document.getElementById('cats-grid'), { columns: CATS_COLS, height: 233, onRender: function () {
     catsFocusEl = catalogueMountedFocus(catsGridView, cats.gridIdx, cats.zone === 'grid', catsCardBaseOf);
+    if (window.TVApp) TVApp.catalogueRendered('cats', catsGridView);
   } });
   return catsGridView;
 }

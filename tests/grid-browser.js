@@ -89,7 +89,7 @@ window.runGridTests = async function (assert) {
     var pins = range(8, function (i) { return { slug: 'cat-' + i, name: 'A very long synthetic pinned category ' + i }; });
     savePinnedCats(pins); renderPinnedCatChips(); browse.zone = 'pins'; browse.pinIdx = 0;
     for (var pi = 0; pi < 8; pi++) browseMove(1, 0);
-    assert(browse.pinIdx === 8 && document.getElementById('browse-pinnedcats').scrollLeft > 0, 'all eight pinned chips are remotely reachable in a scrolling strip');
+    assert(browse.pinIdx === 8 && getComputedStyle(document.getElementById('browse-pinnedcats')).display === 'none', 'legacy pinned strip retains data while TV browsing uses category Options');
     browse.zone = 'grid'; browse.gridIdx = 600; applyBrowseFocus();
     var expected = catalogueKey(browse.streams[600]);
     getBrowseGrid().get(600).querySelector('.bname').dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -134,7 +134,10 @@ window.runGridTests = async function (assert) {
     assert(hasBrowseCat(displayedCats()[2].slug), 'category logical index toggles its matching Browse filter');
     cats.gridIdx = 401; applyCatsFocus();
     var pinTarget = displayedCats()[400].slug;
-    getCatsGrid().get(401).querySelector('[data-act=catpin]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    TVApp.catalogueFocus();
+    getCatsGrid().get(401).querySelector('.tv-catalog-options').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: KEY.DOWN, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: KEY.OK, bubbles: true }));
     assert(isCatPinned(pinTarget), 'deep category pointer pin uses absolute index instead of mounted child offset');
     cats.list = []; cats.page = 1; cats.hasMore = true; cats.error = false; cats.focusKey = null; cats.gridIdx = 0; loadCatsMore(false);
     request('/api/v1/subcategories?page=1').cb(new Error('fixture page failure'));

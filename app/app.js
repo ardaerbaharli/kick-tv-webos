@@ -11,6 +11,7 @@
 document.addEventListener('visibilitychange', function () {
   if (backupRestoreBlocked) return;
   if (document.hidden) {
+    if (backup.open) closeBackup();
     cancelVodNext();
     saveVodProgress(true); saveLiveMark(true); pauseNotify();
     // Nobody is reading chat while another app is in front; parsing a busy room
@@ -35,7 +36,10 @@ document.addEventListener('visibilitychange', function () {
   if (PB.active && state.current) { PB.recoverCount = 0; recoverPlayback(state.current); } // a deliberate check, not a failure
   pumpNotify();
 });
-window.addEventListener('pagehide', function () { saveVodProgress(true); saveLiveMark(true); });
+window.addEventListener('pagehide', function () {
+  saveVodProgress(true); saveLiveMark(true);
+  if (backup.open) closeBackup();
+});
 // Handle the network coming back or dropping out.
 window.addEventListener('online', function () {
   if (backupRestoreBlocked) return;
@@ -124,6 +128,7 @@ function resumeLastVodAtStartup(done) {
   });
 }
 function startupRecoveryUiBusy() {
+  if (!document.hidden && !saver.on && startupResumePending && !startupUserTookOver && window.TVApp && TVApp.screen() === 'home' && !TVNavigation.busy()) return false;
   return document.hidden || state.mode !== 'player' || state.sidebarOpen || saver.on || anyPanelOpen();
 }
 function retryLastVodAfterReconnect() {
@@ -169,7 +174,9 @@ function finishStartupWithoutVod(preserveLastVod) {
 }
 function finishStartupFallback(preserveLastVod) {
   var target = startupLiveTarget();
-  if (target) { play(target, preserveLastVod); return; }
+  var wanted = loadLast();
+  if (target && target === wanted) { play(target, preserveLastVod); return; }
+  if (window.TVApp) { TVApp.show('home', null, true); return; }
   // Nothing to play. On a fresh, empty setup, open the live browser so there
   // is something to pick from right away; otherwise show the idle screen.
   if (!getFavorites().length && !state.netDown) {
@@ -234,8 +241,10 @@ function markBootReady() {
 // True once the viewer (or the deadline's idle screen) owns what is on screen, so
 // a late startup decision must not yank them somewhere else.
 function bootChoiceSuperseded() {
+  if (!document.hidden && !saver.on && startupResumePending && !startupUserTookOver && window.TVApp && TVApp.screen() === 'home' && !TVNavigation.busy()) return false;
   return !!(state.current || state.vod || state.sidebarOpen || state.mode !== 'player' || anyPanelOpen());
 }
+var startupResumePending = false, startupUserTookOver = false;
 (function boot() {
   var restored = BackupRestore.recover();
   if (!restored.ok) {
@@ -246,51 +255,21 @@ function bootChoiceSuperseded() {
   }
   if (restored.status === 'restored') backupRestoreNotice = 'Backup restored.';
   else if (restored.status === 'rolledback') backupRestoreNotice = 'Restore failed. Your previous data was kept.';
-  setMode('player');
-  loadQualityPref();
-  loadSettings();
+  setMode('player'); loadQualityPref(); loadSettings();
   ChatWindow.init();
   if (window.UIPolish) UIPolish.init();
-  getFirstRun();      // stamp the baseline before any offline row can render
-  loadChannelCache();                         // instant sidebar/home data while the real fetch runs
-  applyDim();
-  applyChatStyle();                           // apply chat appearance and layout
-  syncDiagnostics();
-  loadAppVersion();                           // populate the version chip in Settings promptly
-  setTimeout(checkForUpdate, 3000);           // check GitHub for a newer release, once the app has settled
-  state.lastInput = Date.now();
-  setInterval(checkSaver, 1000);              // burn-in guard checks in every second — see checkSaver
-  showState('splash');
-  // The quick start goes onto the Luna bus FIRST (its single request must not
-  // queue behind the favorites pool); the full refresh follows right behind
-  // and loads the other channels while playback is already starting.
-  bootDeadlineTimer = setTimeout(function () {
-    if (!markBootReady()) return;
-    showNothing();                            // cached channels give the idle screen something to show
-  }, BOOT_DEADLINE_MS);
-  var favoritesDone = false, favoritesWaiters = [];
-  quickStart(function (started) {
-    if (started) {
-      markBootReady();
-      return;
-    }
-    var decide = function () {                // nothing quick-startable: wait for real data
-      resumeLastVodAtStartup(function (resumed, retryable) {
-        var firstReady = markBootReady();     // startup choice is settled; accept input now
-        if (resumed) return;
-        // If the deadline already handed control over, only finish the startup
-        // choice when the viewer has not picked something themselves meanwhile.
-        if (!firstReady && bootChoiceSuperseded()) return;
-        finishStartupWithoutVod(retryable);
-      });
-    };
-    if (favoritesDone) decide(); else favoritesWaiters.push(decide);
+  getFirstRun(); loadChannelCache();
+  applyDim(); applyChatStyle(); syncDiagnostics(); loadAppVersion();
+  setTimeout(checkForUpdate, 3000);
+  state.lastInput = Date.now(); setInterval(checkSaver, 1000);
+  // The cached shell is interactive before any network response. An explicit
+  // resume preference can start video only until the viewer takes over.
+  markBootReady(); TVApp.show('home', null, true);
+  startupResumePending = settings.startup === 'resume';
+  if (startupResumePending) quickStart(function (started) {
+    var explain = !started && !startupUserTookOver;
+    startupResumePending = false;
+    if (explain) toast('Last stream unavailable. Choose something to watch.');
   });
-  fetchFavorites(function () {
-    favoritesDone = true;
-    // a quick-started VOD could not know where to return to before this
-    if (state.vod && !state.vodReturn) state.vodReturn = startupLiveTarget();
-    for (var i = 0; i < favoritesWaiters.length; i++) favoritesWaiters[i]();
-    favoritesWaiters = [];
-  });
+  fetchFavorites(function () { TVApp.refresh(); });
 })();
