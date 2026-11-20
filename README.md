@@ -189,8 +189,9 @@ new version tag. Do not move published tags. Releases for the same tag are seria
 The workflows use actions pinned to commit SHAs. Dependency and action updates
 are proposed by Dependabot. The fork's Actions must be enabled; successful runs
 are visible on its [Actions page](https://github.com/ardaerbaharli/kick-tv-webos/actions).
-Branch protection should require the `check`, `browser (120.0.6099.109)`, and
-`browser (stable)` checks after these workflows reach the default branch.
+The fork’s `main` branch requires the `check`, `browser (120.0.6099.109)`, and
+`browser (stable)` checks, including for administrators. Updates must pass against
+the current base branch; force pushes and branch deletion are disabled.
 Desktop fixtures do not replace physical TV playback and remote-control checks.
 
 ## License

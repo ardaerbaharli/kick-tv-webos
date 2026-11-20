@@ -83,12 +83,27 @@ panel ownership, source restoration after cold catalog reload, delayed
 responses, seek cancellation, first-run migration, chat reading, and undo.
 Design captures cover Home, Browse, Large, Settings, player, and docked chat.
 
-Remote CI has not been verified: the GitHub API reports Actions enabled but
-lists no workflows or runs for this fork, and attempting to enable `ci.yml`
-returns 404 despite the file being present on the default branch. Browser
-access was unavailable to inspect GitHub's Actions setup screen. The local
-checks above passed. Inspect the [fork's Actions page](https://github.com/ardaerbaharli/kick-tv-webos/actions)
-for any required first-time workflow activation.
+Remote CI is now verified on this fork. [Run 44730938283](https://github.com/ardaerbaharli/kick-tv-webos/actions/runs/44730938283)
+passed 156 Node tests (including the security and CSS-checker regressions), six
+release-publisher regressions, and 580 browser checks on each of Chrome 120 and
+stable Chrome. The IPK was built with locked tooling, inspected for correct app
+and service IDs, version, entry points, and package control metadata, then uploaded
+with its SHA-256 manifest. This supersedes the earlier Actions activation blocker.
+The supported minimum is webOS 10 / Chromium 120; the ES5 and Chromium 87 CSS
+checks are additional conservative static checks, not certification of older TVs.
+Release publishing uses a separate job with write permission, verified assets,
+and draft completion; published retries verify matching bytes without changes.
+No release tag or public release was created during this validation.
+
+The CLI's vendor npm shrinkwrap retains dependency advisories: the current npm
+audit reports 10 affected dependency entries (one critical, four high, five
+moderate). Root npm overrides do not replace those shrinkwrapped entries, so
+ineffective overrides were discarded. These packages are development tooling,
+not TV application dependencies. Their installation has lifecycle scripts disabled
+and occurs only in a disposable read-only-token build job; the publishing job
+installs none of them. No claim is made that these advisories are all reachable
+through packaging. Upstream remediation remains needed; packaging compatibility
+was verified against the exact locked CLI rather than an untested dependency fork.
 
 All app scripts were parsed as ES5. CSS was checked against Chromium 87 using
 the repository's compatibility check. The webOS CLI successfully packaged the
@@ -98,10 +113,12 @@ certify hardware playback.
 
 The later security follow-up changes phone-sharing session revocation, HTTP
 limits, input validation, and CI token permissions. It adds mocked regression
-cases, but those new cases and the changed app have not been runtime-tested
-during that review: the security review requires an isolated execution sandbox,
-and neither Docker nor Colima was running. Syntax checks passed. The later app-ID rename was packaged with the security
-source changes included; runtime security validation is still outstanding. Public OSV queries returned no advisories for hls.js
+cases. During the focused security review, local runtime checks were deferred
+because the required sandbox was unavailable. The mocked regressions have since
+passed in GitHub CI, alongside both browser suites. These fixtures do not validate
+the actual TV HTTP listener, Node/OpenSSL runtime, or Luna permissions. The app-ID
+rename was packaged with the security source changes included; hardware security
+validation is still outstanding. Public OSV queries returned no advisories for hls.js
 1.7.3 and qrcode-generator 2.0.4, and both bundled files matched the published
 vendor files byte for byte. These checks do not establish the security of the
 TV's installed Node/OpenSSL versions or its Luna service permissions.

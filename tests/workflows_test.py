@@ -96,3 +96,36 @@ class Publishing(unittest.TestCase):
         with self.assertRaises(HTTPError) as raised:
             self.exercise(forbidden=True)
         self.assertEqual(raised.exception.code, 403)
+
+
+class Packaging(unittest.TestCase):
+    def exercise(self, tag):
+        namespace = runpy.run_path(str(PUBLISHER.with_name('package.py')))
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            (root / 'app').mkdir()
+            (root / 'app/appinfo.json').write_text(json.dumps({'id': 'com.ardaerbaharli.kicktv', 'version': '1.0.0'}))
+            service = root / 'services/com.ardaerbaharli.kicktv.service'
+            service.mkdir(parents=True)
+            (service / 'package.json').write_text(json.dumps({'name': service.name, 'version': '1.0.0'}))
+            def build(*args, **kwargs):
+                (root / ('dist/com.ardaerbaharli.kicktv_' + tag[1:] + '_all.ipk')).write_bytes(b'fixture')
+            previous = os.getcwd()
+            try:
+                os.chdir(root)
+                with patch.dict(os.environ, {'RELEASE_TAG': tag, 'GITHUB_REPOSITORY': 'fixture/app', 'GITHUB_SHA': 'fixture-sha'}, clear=True), \
+                        patch('subprocess.run', side_effect=build), patch.dict(namespace['main'].__globals__, {'verify_ipk': lambda *args: None}):
+                    namespace['main']()
+                app = json.loads((root / 'app/appinfo.json').read_text())
+                service_metadata = json.loads((service / 'package.json').read_text())
+                manifest = json.loads((root / 'dist/org.webosbrew.manifest.json').read_text())
+                return app['version'], service_metadata['version'], manifest['version']
+            finally:
+                os.chdir(previous)
+
+    def test_tag_versions_app_service_and_manifest_together(self):
+        self.assertEqual(self.exercise('v2.3.4'), ('2.3.4', '2.3.4', '2.3.4'))
+
+    def test_invalid_release_tag_is_rejected_before_build(self):
+        with self.assertRaisesRegex(ValueError, 'Release tag'):
+            self.exercise('v2.3.4-preview')
