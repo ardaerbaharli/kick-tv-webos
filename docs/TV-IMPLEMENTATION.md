@@ -96,8 +96,8 @@ and draft completion; published retries verify matching bytes without changes.
 No release tag or public release was created during this validation.
 
 The CLI's vendor npm shrinkwrap retains dependency advisories: the current npm
-audit reports 10 affected dependency entries (one critical, four high, five
-moderate). Root npm overrides do not replace those shrinkwrapped entries, so
+audit reports critical, high, and moderate advisories in that toolchain.
+Root npm overrides do not replace those shrinkwrapped entries, so
 ineffective overrides were discarded. These packages are development tooling,
 not TV application dependencies. Their installation has lifecycle scripts disabled
 and occurs only in a disposable read-only-token build job; the publishing job
