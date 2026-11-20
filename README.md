@@ -5,7 +5,11 @@ and Back. This fork redesigns the interface for a basic TV remote: a real Home
 screen, saved channels, Continue watching, consistent player controls, grouped
 settings, and remote-friendly chat layouts. No sign-in is required.
 
-The redesign is on the [`tv-ux-redesign`](../../tree/tv-ux-redesign) branch.
+Download the latest `.ipk` from this fork's
+[Releases page](https://github.com/ardaerbaharli/kick-tv-webos/releases/latest).
+The first redesign release is
+[v1.7.0](https://github.com/ardaerbaharli/kick-tv-webos/releases/tag/v1.7.0).
+The source is on the [`tv-ux-redesign`](../../tree/tv-ux-redesign) branch.
 It builds on [barisahmet/kick-tv-webos](https://github.com/barisahmet/kick-tv-webos)
 and retains its playback engine, bundled service, local data, and MIT license.
 The app ID is `com.ardaerbaharli.kicktv`, with companion service
@@ -36,8 +40,10 @@ video plays on a separate hardware layer and may not appear in TV captures.
 
 ## Install
 
-LG does not allow apps like this in the Content Store, so you sideload it in
-Developer Mode.
+Install Kick TV through Developer Mode on a TV with webOS 10 or newer.
+[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) provides
+a desktop installation option for Windows, macOS, and Linux. No command line
+or LG SDK is required for this option.
 
 ### 1. Turn on Developer Mode
 
@@ -49,17 +55,28 @@ Developer Mode.
 4. Open Developer Mode again. Note the TV's IP address, and turn on Key Server to
    get a short passphrase.
 
-Developer Mode turns off after about 50 hours. Turn on auto renew if you want it
-to stay on. If it expires, your sideloaded apps disappear, so just enable it
-again and reinstall.
+Developer Mode has a session timer. Renew the session before the timer expires.
+webOS Dev Manager also provides tools for session renewal.
+If Developer Mode expires, enable it again and reinstall your apps.
 
-### 2. Install the app
+### 2. Install with webOS Dev Manager (recommended)
 
-The easy way, no command line: download the latest `.ipk` from the
-[Releases](../../releases) page and install it with
-[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop), a point
-and click tool. Add your TV with its IP and passphrase from step 1, then install
-the file.
+1. Download the desktop installer from the
+   [webOS Dev Manager releases](https://github.com/webosbrew/dev-manager-desktop/releases/latest).
+2. Install and open webOS Dev Manager on your computer.
+3. Connect your computer and TV to the same local network.
+4. Add your TV with its IP address and the passphrase shown in Developer Mode.
+5. Download the `.ipk` file from the
+   [latest Kick TV release](https://github.com/ardaerbaharli/kick-tv-webos/releases/latest).
+   For v1.7.0, the file is `com.ardaerbaharli.kicktv_1.7.0_all.ipk`.
+6. In webOS Dev Manager, select your TV. Install the downloaded `.ipk` file.
+7. Open Kick TV from the TV home screen.
+
+If you used the original app, export its backup before you transfer your data.
+Restore that backup in this version to transfer your channels and settings.
+The two apps have separate app IDs and storage.
+
+### Alternative: install from the command line
 
 Prefer the command line, or want to build it yourself? You need Node.js and the
 webOS CLI:
