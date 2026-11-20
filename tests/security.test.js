@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'services/com.barisahmet.kicktv.service/service.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'services/com.ardaerbaharli.kicktv.service/service.js'), 'utf8');
 const TOKEN_A = 'fixtureSessionAlpha1234', TOKEN_B = 'fixtureSessionBravo5678';
 
 function harness(deferListen = false) {

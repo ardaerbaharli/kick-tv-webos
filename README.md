@@ -8,6 +8,10 @@ settings, and remote-friendly chat layouts. No sign-in is required.
 The redesign is on the [`tv-ux-redesign`](../../tree/tv-ux-redesign) branch.
 It builds on [barisahmet/kick-tv-webos](https://github.com/barisahmet/kick-tv-webos)
 and retains its playback engine, bundled service, local data, and MIT license.
+The app ID is `com.ardaerbaharli.kicktv`, with companion service
+`com.ardaerbaharli.kicktv.service`. It installs separately from the original app.
+Export a backup in the original app and restore it here to transfer your channels.
+
 Physical LG TV validation of the redesign is still pending; desktop fixtures
 cannot verify hardware video composition or real remote latency.
 
@@ -63,12 +67,12 @@ webOS CLI:
 ```
 npm install -g @webos-tools/cli
 ares-setup-device --add tv --info "host=YOUR_TV_IP" --info "port=9922" --info "username=prisoner"
-ares-package ./app ./services/com.barisahmet.kicktv.service -o .
-ares-install --device tv com.barisahmet.kicktv_1.0.0_all.ipk
+ares-package ./app ./services/com.ardaerbaharli.kicktv.service -o .
+ares-install --device tv com.ardaerbaharli.kicktv_1.0.0_all.ipk
 ```
 
 Launch it from the TV home screen, or with
-`ares-launch --device tv com.barisahmet.kicktv`.
+`ares-launch --device tv com.ardaerbaharli.kicktv`.
 
 If the install fails with `isDate is not a function`, that is a known bug in the
 webOS CLI on recent Node.js versions, not your setup. Either use webOS Dev
@@ -81,7 +85,7 @@ if (!util.isDate) util.isDate = (d) => Object.prototype.toString.call(d) === '[o
 ```
 
 ```
-NODE_OPTIONS="--require ./shim.js" ares-install --device tv com.barisahmet.kicktv_1.0.0_all.ipk
+NODE_OPTIONS="--require ./shim.js" ares-install --device tv com.ardaerbaharli.kicktv_1.0.0_all.ipk
 ```
 
 ## Using it

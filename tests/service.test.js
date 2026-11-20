@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
-const source = fs.readFileSync(path.join(__dirname, '../services/com.barisahmet.kicktv.service/service.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../services/com.ardaerbaharli.kicktv.service/service.js'), 'utf8');
 
 // unsupportedCurves: curve names this TV's TLS library does not know. Asking for a
 // list that contains one throws, exactly as OpenSSL 1.0.2 does for X25519.

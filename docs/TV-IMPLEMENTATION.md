@@ -1,7 +1,7 @@
 # TV redesign implementation
 
 Implemented on `tv-ux-redesign` in the fork `ardaerbaharli/kick-tv-webos`.
-The original service, HLS engine, app identity, license, saved channels, pins,
+The original service logic, HLS engine, license, saved-channel format, pins,
 recording progress, and transfer format are retained.
 
 ## Delivered
@@ -92,17 +92,16 @@ for any required first-time workflow activation.
 
 All app scripts were parsed as ES5. CSS was checked against Chromium 87 using
 the repository's compatibility check. The webOS CLI successfully packaged the
-app and service into `com.barisahmet.kicktv_1.0.0_all.ipk`. The local `.ipk` is
+app and service into a development `.ipk`. The local `.ipk` is
 ignored by Git; sideload it using webOS Dev Manager. Packaging alone does not
 certify hardware playback.
 
 The later security follow-up changes phone-sharing session revocation, HTTP
 limits, input validation, and CI token permissions. It adds mocked regression
 cases, but those new cases and the changed app have not been runtime-tested
-or repackaged: the security review requires an isolated execution sandbox,
-and neither Docker nor Colima was running. Syntax checks passed. Re-run the
-tests and rebuild before installing these security changes; the earlier `.ipk`
-does not contain them. Public OSV queries returned no advisories for hls.js
+during that review: the security review requires an isolated execution sandbox,
+and neither Docker nor Colima was running. Syntax checks passed. The later app-ID rename was packaged with the security
+source changes included; runtime security validation is still outstanding. Public OSV queries returned no advisories for hls.js
 1.7.3 and qrcode-generator 2.0.4, and both bundled files matched the published
 vendor files byte for byte. These checks do not establish the security of the
 TV's installed Node/OpenSSL versions or its Luna service permissions.
@@ -133,6 +132,12 @@ and at least one physical 4K display:
 - Validate disconnect/reconnect, unavailable recordings, raid/next-video
   interruptions, local phone pairing, and an upgrade from an existing install.
 
-The original app ID is unchanged to preserve local data. The package version
-remains 1.0.0 for this development build; select a release version after hardware
-acceptance rather than tagging an unverified release.
+The app ID is now `com.ardaerbaharli.kicktv`, and its companion service is
+`com.ardaerbaharli.kicktv.service`. This is a separate installation/storage
+namespace. Existing data can be transferred by exporting from the original app
+and restoring in the fork. New backups use the new ID; imports and recovery
+also recognize the legacy `com.barisahmet.kicktv` marker.
+
+The renamed development package is `com.ardaerbaharli.kicktv_1.0.0_all.ipk`.
+Its metadata and contents were checked after packaging. Version 1.0.0 remains
+a development version; hardware and runtime security acceptance remain pending.

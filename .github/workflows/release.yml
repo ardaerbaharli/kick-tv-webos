@@ -49,19 +49,19 @@ jobs:
         run: node -e "const fs=require('fs'),p='app/appinfo.json',j=JSON.parse(fs.readFileSync(p));j.version=process.env.VERSION;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');"
 
       - name: Build the .ipk
-        run: ares-package ./app ./services/com.barisahmet.kicktv.service -o .
+        run: ares-package ./app ./services/com.ardaerbaharli.kicktv.service -o .
 
       - name: Write the webosbrew manifest
         run: |
-          export IPK="com.barisahmet.kicktv_${VERSION}_all.ipk"
+          export IPK="com.ardaerbaharli.kicktv_${VERSION}_all.ipk"
           export SHA=$(sha256sum "$IPK" | cut -d' ' -f1)
-          node -e "const fs=require('fs'),e=process.env;fs.writeFileSync('org.webosbrew.manifest.json', JSON.stringify({id:'com.barisahmet.kicktv',version:e.VERSION,type:'web',title:'Kick TV',appDescription:'Watch Kick livestreams on your LG webOS TV. Unofficial.',iconUri:'https://raw.githubusercontent.com/' + e.GITHUB_REPOSITORY + '/main/app/largeIcon.png',sourceUrl:'https://github.com/' + e.GITHUB_REPOSITORY,rootRequired:false,ipkUrl:e.IPK,ipkHash:{sha256:e.SHA}}, null, 2));"
+          node -e "const fs=require('fs'),e=process.env;fs.writeFileSync('org.webosbrew.manifest.json', JSON.stringify({id:'com.ardaerbaharli.kicktv',version:e.VERSION,type:'web',title:'Kick TV',appDescription:'Watch Kick livestreams on your LG webOS TV. Unofficial.',iconUri:'https://raw.githubusercontent.com/' + e.GITHUB_REPOSITORY + '/main/app/largeIcon.png',sourceUrl:'https://github.com/' + e.GITHUB_REPOSITORY,rootRequired:false,ipkUrl:e.IPK,ipkHash:{sha256:e.SHA}}, null, 2));"
           cat org.webosbrew.manifest.json
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$TAG" com.barisahmet.kicktv_*.ipk org.webosbrew.manifest.json \
+          gh release create "$TAG" com.ardaerbaharli.kicktv_*.ipk org.webosbrew.manifest.json \
             --title "Kick TV $TAG" \
             --notes "Download the .ipk below and sideload it onto your LG webOS TV in Developer Mode. See the README for the steps."

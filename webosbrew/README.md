@@ -12,15 +12,15 @@ needed is already prepared here.
   app id, version, title, icon URL, source URL, the `.ipk` file name, and the
   `.ipk` sha256 hash. It regenerates on each release, so the "latest" URL always
   points at the current build:
-  https://github.com/barisahmet/kick-tv-webos/releases/latest/download/org.webosbrew.manifest.json
-- `com.barisahmet.kicktv.yml` in this folder is the package file to submit.
+  https://github.com/ardaerbaharli/kick-tv-webos/releases/latest/download/org.webosbrew.manifest.json
+- `com.ardaerbaharli.kicktv.yml` in this folder is the package file to submit.
 
 ## How to submit
 
 1. Make sure at least one tagged release exists, so `releases/latest` resolves to
    a real manifest and `.ipk`.
 2. Fork https://github.com/webosbrew/apps-repo.
-3. Copy `webosbrew/com.barisahmet.kicktv.yml` from this repo into the fork's
+3. Copy `webosbrew/com.ardaerbaharli.kicktv.yml` from this repo into the fork's
    `packages/` folder.
 4. Open a pull request. The maintainers review and test it; once merged, the app
    appears in the Homebrew Channel for everyone.

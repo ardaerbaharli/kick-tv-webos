@@ -20,6 +20,16 @@ function harness(store = new Map()) {
 const original = { 'kicktv.added': '["original"]', 'kicktv.settings': '{"dim":true}', 'kicktv.vodprogress': '{"version":1,"items":{"old:1":{"position":100}}}' };
 const incoming = { 'kicktv.added': '["imported"]', 'kicktv.settings': '{"dim":false}', 'kicktv.vodprogress': '{"version":1,"items":{"new:2":{"position":500}}}' };
 function profile(store) { return Object.fromEntries([...store].filter(([k]) => k.startsWith('kicktv.'))); }
+test('fork identity writes new backup markers and recognizes legacy backup identities', () => {
+  const a = harness();
+  assert.equal(a.h.BackupRestore.appId, 'com.ardaerbaharli.kicktv');
+  assert.equal(a.h.BackupRestore.acceptsApp('com.ardaerbaharli.kicktv'), true);
+  assert.equal(a.h.BackupRestore.acceptsApp('com.barisahmet.kicktv'), true);
+  assert.equal(a.h.BackupRestore.acceptsApp('unrelated.app'), false);
+  a.h.BackupRestore.queue(incoming);
+  assert.equal(a.h.BackupRestore.recover().status, 'restored');
+  assert.equal(JSON.parse(a.store.get('kicktvbak.beforerestore')).app, 'com.ardaerbaharli.kicktv');
+});
 test('restore is staged until a new boot, so old pagehide writers cannot overwrite imported progress', () => {
   const a = harness(new Map(Object.entries(original)));
   a.h.BackupRestore.queue(incoming);

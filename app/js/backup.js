@@ -21,7 +21,7 @@ function lunaCall(method, params, cb) {
     try { r = JSON.parse(msg); } catch (e) {}
     if (r && r.ok) cb(null, r); else cb((r && r.error) || 'service');
   };
-  try { bridge.call('luna://com.barisahmet.kicktv.service/' + method, JSON.stringify(params || {})); }
+  try { bridge.call('luna://com.ardaerbaharli.kicktv.service/' + method, JSON.stringify(params || {})); }
   catch (e) { if (!done) { done = true; clearTimeout(timer); cb('callfail'); } }
 }
 function backupToken() {
@@ -40,7 +40,7 @@ function backupSnapshot() {
     }
   } catch (e) {}
   var favs = getFavorites();
-  return { app: 'com.barisahmet.kicktv', v: 1, at: new Date().toISOString(),
+  return { app: BackupRestore.appId, v: 1, at: new Date().toISOString(),
            channels: favs.map(function (s) { return (state.channels[s] && state.channels[s].name) || s; }),
            storage: storage };
 }
@@ -151,7 +151,7 @@ function receiveBackupInbox(inbox) {
   var q, choices;
   if (inbox.kind === 'backup') {
     var d = inbox.data;
-    if (!d || d.app !== 'com.barisahmet.kicktv' || d.v !== 1 ||
+    if (!d || !BackupRestore.acceptsApp(d.app) || d.v !== 1 ||
         !d.storage || typeof d.storage !== 'object' || Array.isArray(d.storage)) {
       setBackupStatus('That file is not a Kick TV backup.'); return;
     }

@@ -16,7 +16,7 @@ function serviceRequest(method, payload, cb) {
     } catch (e) { cb('parse'); }
   };
   try {
-    bridge.call('luna://com.barisahmet.kicktv.service/' + method, JSON.stringify(payload));
+    bridge.call('luna://com.ardaerbaharli.kicktv.service/' + method, JSON.stringify(payload));
   } catch (e) {
     if (!done) { done = true; clearTimeout(timer); cb('callfail'); }
   }

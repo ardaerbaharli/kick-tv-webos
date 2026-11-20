@@ -16,7 +16,7 @@
 var Service = require('webos-service');
 var https = require('https');
 
-var service = new Service('com.barisahmet.kicktv.service');
+var service = new Service('com.ardaerbaharli.kicktv.service');
 
 var UA = 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 ' +
          '(KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36';

@@ -2,6 +2,8 @@
    reads any settings. The old page's pagehide/timers only touch the old profile.
    A durable journal keeps an interrupted replacement recoverable. ES5 for TV. */
 var BackupRestore = (function () {
+  var APP_ID = 'com.ardaerbaharli.kicktv', LEGACY_APP_ID = 'com.barisahmet.kicktv';
+  function acceptsApp(id) { return id === APP_ID || id === LEGACY_APP_ID; }
   var PENDING = 'kicktvbak.pendingrestore', BEFORE = 'kicktvbak.beforerestore';
   function managed(key) {
     return key.indexOf('kicktv.') === 0 && key !== 'kicktv.channelcache' && key !== 'kicktv.lastplay';
@@ -42,7 +44,7 @@ var BackupRestore = (function () {
   }
   function rollback() {
     var saved = JSON.parse(localStorage.getItem(BEFORE));
-    if (!saved || saved.app !== 'com.barisahmet.kicktv' || saved.v !== 1) throw new Error('Missing recovery backup');
+    if (!saved || !acceptsApp(saved.app) || saved.v !== 1) throw new Error('Missing recovery backup');
     var previous = profile(saved.storage);
     // Release the staged payload's space before rewriting the old profile.
     // If this fails, the existing 'applying' journal still requests rollback.
@@ -62,7 +64,7 @@ var BackupRestore = (function () {
       var next = profile(journal.next);
       try {
         // Do not delete anything until both the backup and intent are durable.
-        localStorage.setItem(BEFORE, JSON.stringify({ app: 'com.barisahmet.kicktv', v: 1,
+        localStorage.setItem(BEFORE, JSON.stringify({ app: APP_ID, v: 1,
           at: new Date().toISOString(), storage: snapshot() }));
         localStorage.setItem(PENDING, JSON.stringify({ version: 1, phase: 'applying' }));
       } catch (e) {
@@ -80,5 +82,5 @@ var BackupRestore = (function () {
       return { ok: false, status: 'blocked' };
     }
   }
-  return { queue: queue, recover: recover, validate: profile };
+  return { queue: queue, recover: recover, validate: profile, appId: APP_ID, acceptsApp: acceptsApp };
 })();
