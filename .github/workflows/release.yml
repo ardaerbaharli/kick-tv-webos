@@ -1,67 +1,42 @@
 name: Release
 
-# Push a version tag (for example v1.0.0) and this builds the installable .ipk
-# and attaches it to a GitHub Release so people can download it.
-
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 permissions:
   contents: read
 
-jobs:
-  checks:
-    uses: ./.github/workflows/ci.yml
+# Never interrupt publication or allow two runs to change the same release together.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
-  build:
-    needs: checks
-    runs-on: ubuntu-latest
+jobs:
+  checks-and-build:
+    uses: ./.github/workflows/ci.yml
+    with:
+      release-tag: ${{ github.ref_name }}
+
+  publish:
+    needs: checks-and-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
-    env:
-      TAG: ${{ github.ref_name }}
     steps:
-      - name: Check out the code
-        uses: actions/checkout@v5
+      - name: Check out only the publisher, with no persisted credentials
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v5
+          sparse-checkout: .github/scripts
+      - name: Download this run's verified package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          node-version: '22'
-
-      - name: Install the webOS CLI
-        run: npm install -g @webos-tools/cli
-
-      # webOS only accepts plain X.Y.Z, and the tag must never reach a script as code.
-      - name: Check the tag is a plain version
-        run: |
-          VERSION="${TAG#v}"
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Tag '$TAG' is not vX.Y.Z"; exit 1
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-
-      - name: Match the app version to the tag
-        run: node -e "const fs=require('fs'),p='app/appinfo.json',j=JSON.parse(fs.readFileSync(p));j.version=process.env.VERSION;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');"
-
-      - name: Build the .ipk
-        run: ares-package ./app ./services/com.ardaerbaharli.kicktv.service -o .
-
-      - name: Write the webosbrew manifest
-        run: |
-          export IPK="com.ardaerbaharli.kicktv_${VERSION}_all.ipk"
-          export SHA=$(sha256sum "$IPK" | cut -d' ' -f1)
-          node -e "const fs=require('fs'),e=process.env;fs.writeFileSync('org.webosbrew.manifest.json', JSON.stringify({id:'com.ardaerbaharli.kicktv',version:e.VERSION,type:'web',title:'Kick TV',appDescription:'Watch Kick livestreams on your LG webOS TV. Unofficial.',iconUri:'https://raw.githubusercontent.com/' + e.GITHUB_REPOSITORY + '/main/app/largeIcon.png',sourceUrl:'https://github.com/' + e.GITHUB_REPOSITORY,rootRequired:false,ipkUrl:e.IPK,ipkHash:{sha256:e.SHA}}, null, 2));"
-          cat org.webosbrew.manifest.json
-
-      - name: Publish the release
+          name: webos-package
+          path: dist
+      - name: Complete draft or verify existing published release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "$TAG" com.ardaerbaharli.kicktv_*.ipk org.webosbrew.manifest.json \
-            --title "Kick TV $TAG" \
-            --notes "Download the .ipk below and sideload it onto your LG webOS TV in Developer Mode. See the README for the steps."
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 .github/scripts/publish-release.py

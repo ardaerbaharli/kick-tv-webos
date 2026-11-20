@@ -29,8 +29,10 @@ needed is already prepared here.
 
 - `pool: main` because this is open source (MIT).
 - `category: multimedia`.
-- `requirements.webosRelease: '>=10.0'`: the app targets webOS 10 (Chrome 120 web
-  engine, also on 2022+ TVs upgraded through webOS Re:New) and may use features
-  older engines lack.
+- `requirements.webosRelease: '>=10.0'`: the supported minimum is webOS 10
+  (Chromium 120, also on eligible TVs upgraded through webOS Re:New). CI runs
+  the browser fixtures on Chrome 120 and current stable Chrome. ES5 parsing
+  and Chromium 87 CSS checks provide additional conservative static coverage;
+  they do not certify older TVs. Hardware playback validation remains required.
 - If you rename the repo or move the icon, update `iconUri` and `manifestUrl` in
   the package file, and `iconUri`/`sourceUrl` in the workflow's manifest step.

@@ -65,7 +65,8 @@ Prefer the command line, or want to build it yourself? You need Node.js and the
 webOS CLI:
 
 ```
-npm install -g @webos-tools/cli
+npm ci --ignore-scripts
+export PATH="$PWD/node_modules/.bin:$PATH"
 ares-setup-device --add tv --info "host=YOUR_TV_IP" --info "port=9922" --info "username=prisoner"
 ares-package ./app ./services/com.ardaerbaharli.kicktv.service -o .
 ares-install --device tv com.ardaerbaharli.kicktv_1.0.0_all.ipk
@@ -156,14 +157,41 @@ The browser runner uses a new headless Chrome profile, blocks external requests,
 and prints a temporary directory containing results and screenshots. Set
 `CHROME_PATH` if Chrome is installed somewhere other than the default macOS path.
 
-The automated compatibility floor is ES5 JavaScript and Chromium 87 CSS
-(the original project’s webOS 22 target). No new browser runtime dependencies
-are required. `tests/run-browser.js tv tvjourneys boot tvvisual` runs the new
+The supported minimum is webOS 10 with Chromium 120. CI runs browser fixtures
+on Chrome 120 and current stable Chrome. Additional static checks enforce ES5
+JavaScript and Chromium 87 CSS, but do not certify older TVs. No new browser
+runtime dependencies are required. `tests/run-browser.js tv tvjourneys boot tvvisual` runs the new
 remote journeys, real startup fixture, and design captures; the default command
 also runs the retained streaming, chat, backup, and catalog regression suites.
 
 See [the implementation notes](docs/TV-IMPLEMENTATION.md) for validation and
 remaining physical-device checks, and [the design system](design.md) for UI rules.
+
+## CI and releases
+
+CI runs on pushes, pull requests, and manual dispatch. It uses locked development
+tooling from `package-lock.json`, runs unit and browser checks, and builds an IPK.
+Each successful build uploads a `webos-package` artifact containing the inspected
+IPK and its SHA-256 manifest. Browser screenshots and results are separate artifacts.
+
+To publish, push a plain version tag such as `v1.0.1` on the intended commit.
+The release workflow applies that version to both app and service metadata,
+runs all checks, and passes the verified package to a separate publishing job.
+Only that job receives release write permission; it installs no build dependencies.
+The manifest icon points at the exact source commit.
+
+Publishing starts with a draft and checks uploaded asset sizes and SHA-256 digests
+before making it public. Rerunning a failed publishing job repairs a draft using
+that run's build artifact. An already published release is left intact: a retry
+succeeds only when both files match. If a rebuild produces different bytes, use a
+new version tag. Do not move published tags. Releases for the same tag are serialized.
+
+The workflows use actions pinned to commit SHAs. Dependency and action updates
+are proposed by Dependabot. The fork's Actions must be enabled; successful runs
+are visible on its [Actions page](https://github.com/ardaerbaharli/kick-tv-webos/actions).
+Branch protection should require the `check`, `browser (120.0.6099.109)`, and
+`browser (stable)` checks after these workflows reach the default branch.
+Desktop fixtures do not replace physical TV playback and remote-control checks.
 
 ## License
 
